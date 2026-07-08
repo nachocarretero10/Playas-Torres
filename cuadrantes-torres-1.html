@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Cuadrantes de torres</title>
+<style>
+  :root{
+    --ocean:#0B5E93;      /* azul océano */
+    --ocean-dark:#083F63;
+    --sky:#DCEEF8;        /* azul claro */
+    --sun:#F4A81C;        /* naranja socorrista */
+    --sun-soft:#FFDF9E;
+    --sand:#F8F1E3;       /* arena */
+    --ink:#15242E;
+    --paper:#fff;
+    --line:#D8CDB4;
+    --muted:#6E7B85;
+    --slotH:32px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{margin:0; background:var(--sand); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; font-size:15px; line-height:1.35;}
+  .wrap{max-width:520px; margin:0 auto; padding:0 14px 90px;}
+
+  header{background:var(--ocean); color:#fff; margin:0 -14px 18px; padding:20px 14px 14px;
+    border-bottom:6px solid var(--sun);}
+  .eyebrow{font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--sky); font-weight:600;}
+  h1{margin:2px 0 0; font-size:30px; font-weight:900; letter-spacing:-.02em; text-transform:uppercase;}
+
+  .step{margin-bottom:18px;}
+  .step h2{font-size:12px; letter-spacing:.14em; text-transform:uppercase; margin:0 0 8px;
+    font-weight:800; color:var(--ocean-dark);}
+  .step h2 span{color:var(--muted); font-weight:600; text-transform:none; letter-spacing:0;}
+
+  .seg{display:flex; gap:6px;}
+  .seg button{flex:1; padding:10px 4px; border:2px solid var(--ocean); background:var(--paper);
+    font-weight:800; font-size:13px; cursor:pointer; color:var(--ocean-dark); border-radius:8px;}
+  .seg button small{display:block; font-weight:500; font-size:10px; color:var(--muted); margin-top:2px;}
+  .seg button.on{background:var(--ocean); color:#fff;}
+  .seg button.on small{color:var(--sky);}
+  #segPat button{border-color:var(--sun);}
+  #segPat button.on{background:repeating-linear-gradient(45deg,var(--sun) 0 6px,var(--sun-soft) 6px 12px);
+    color:var(--ink); border-color:var(--ink);}
+  #segPat button.on small{color:var(--ink);}
+
+  .person{display:flex; align-items:center; gap:6px; margin-bottom:6px;}
+  .person input{flex:1; min-width:0; padding:9px 10px; border:2px solid var(--ocean); font-size:15px;
+    font-weight:600; background:var(--paper); border-radius:8px; color:var(--ink);}
+  .pill{padding:9px 0; width:52px; text-align:center; border:2px solid var(--ocean); background:var(--paper);
+    font-weight:800; font-size:13px; cursor:pointer; flex:none; border-radius:8px; color:var(--ocean-dark);}
+  .pill.on{background:var(--ocean); color:#fff;}
+  .del{width:34px; padding:9px 0; border:2px solid var(--line); background:var(--paper);
+    color:var(--muted); font-weight:800; cursor:pointer; flex:none; border-radius:8px;}
+
+  .add{width:100%; padding:10px; border:2px dashed var(--ocean); background:transparent;
+    font-weight:800; font-size:14px; cursor:pointer; margin-top:4px; color:var(--ocean-dark); border-radius:8px;}
+  .hint{font-size:12px; color:var(--muted); margin-top:8px;}
+
+  .go{width:100%; padding:15px; border:none; background:var(--sun); color:var(--ink);
+    font-weight:900; font-size:17px; letter-spacing:.06em; text-transform:uppercase; cursor:pointer;
+    margin-top:6px; border-radius:10px; box-shadow:0 3px 0 var(--ocean-dark);}
+  .go:active{transform:translateY(2px); box-shadow:0 1px 0 var(--ocean-dark);}
+
+  /* ---- tablero ---- */
+  #board{display:none; margin-top:26px; background:var(--paper); border-radius:12px;
+    padding:12px; border:2px solid var(--ocean);}
+  .boardHead{border-bottom:4px solid var(--sun); padding-bottom:8px;
+    display:flex; justify-content:space-between; align-items:baseline;}
+  .boardHead b{font-size:22px; font-weight:900; text-transform:uppercase; color:var(--ocean-dark);}
+  .boardHead span{font-size:12px; color:var(--muted); font-weight:600;}
+
+  .grid{display:flex; margin-top:10px;}
+  .rail{width:44px; flex:none; position:relative;
+    font-family:ui-monospace,Menlo,monospace; font-size:10px; color:var(--muted);}
+  .rail div{position:absolute; right:6px; transform:translateY(-50%);}
+  .cols{flex:1; display:flex; gap:5px;}
+  .col{flex:1; min-width:0;}
+  .colHead{text-align:center; font-weight:900; font-size:16px; padding:5px 0;
+    background:var(--ocean); color:#fff; border-radius:6px 6px 0 0;}
+  .colBody{position:relative; border:1px solid var(--line); border-top:none;}
+
+  .blk{position:absolute; left:0; right:0; border-top:2px solid var(--ocean);
+    padding:3px 4px; overflow:hidden; cursor:pointer;}
+  .blk .L{font-size:24px; font-weight:900; line-height:1; color:var(--ocean-dark);}
+  .blk .n{font-size:10px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .blk .t{font-size:9px; color:var(--muted); font-family:ui-monospace,Menlo,monospace;}
+  .blk.a{background:var(--paper);} .blk.b{background:var(--sky);}
+  .blk.pat{background:repeating-linear-gradient(45deg,var(--sun-soft) 0 7px,#fff 7px 14px);
+    border-top-color:var(--sun);}
+  .blk.pat .L{color:var(--ink);}
+  .blk.gap{background:var(--sand); border-top:2px dashed var(--muted); color:var(--muted); text-align:center;}
+  .blk.gap .L{font-size:13px; font-weight:700; margin-top:4px; color:var(--muted);}
+  .hrline{position:absolute; left:0; right:0; border-top:1px dotted var(--line); pointer-events:none;}
+
+  .totals{margin-top:14px; border-top:3px solid var(--ocean); padding-top:8px;}
+  .totals h3{font-size:12px; letter-spacing:.14em; text-transform:uppercase; margin:0 0 6px; color:var(--ocean-dark);}
+  .trow{display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--line); font-size:14px;}
+  .trow b{font-weight:800; color:var(--ocean-dark);}
+  .warn{margin-top:10px; border:2px solid var(--sun); padding:10px; font-size:13px;
+    background:var(--sun-soft); border-radius:8px;}
+  .warn b{display:block; margin-bottom:4px;}
+
+  .actions{display:flex; gap:8px; margin-top:14px;}
+  .actions button{flex:1; padding:12px; border:2px solid var(--ocean); background:var(--paper);
+    font-weight:800; font-size:14px; cursor:pointer; color:var(--ocean-dark); border-radius:8px;}
+  .note{font-size:12px; color:var(--muted); margin-top:10px;}
+
+  /* editor de bloque */
+  #sheet{display:none; position:fixed; inset:0; background:rgba(8,63,99,.5); z-index:10;}
+  #sheet .panel{position:absolute; bottom:0; left:0; right:0; background:var(--paper);
+    border-top:5px solid var(--sun); padding:14px; max-height:70%; overflow:auto;
+    border-radius:14px 14px 0 0;}
+  #sheet h4{margin:0 0 10px; font-size:14px; font-weight:900; text-transform:uppercase; color:var(--ocean-dark);}
+  #sheet button{display:block; width:100%; text-align:left; padding:11px; margin-bottom:6px;
+    border:2px solid var(--ocean); background:var(--paper); font-weight:700; font-size:15px;
+    cursor:pointer; border-radius:8px; color:var(--ink);}
+  #sheet button.cancel{border-color:var(--line); color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Socorrismo · Puerto — Almarda — Corinto</div>
+  <h1>Cuadrante de torres</h1>
+</header>
+
+<div class="step">
+  <h2>1 · Playa</h2>
+  <div class="seg" id="segPlaya">
+    <button data-v="0" class="on">PUERTO<small>T1 · T2 · T3</small></button>
+    <button data-v="1">ALMARDA<small>T4 · T5 · T6</small></button>
+    <button data-v="2">CORINTO<small>T7 · T8 · T9</small></button>
+  </div>
+</div>
+
+<div class="step">
+  <h2>2 · Mes</h2>
+  <div class="seg" id="segMes">
+    <button data-v="junsep" class="on">JUN / SEP<small>torres 10:30–19:30 · turno 10 baja 17:30</small></button>
+    <button data-v="julago">JUL / AGO<small>torres 10:30–20:30 · turno 10 baja 18:30</small></button>
+  </div>
+</div>
+
+<div class="step">
+  <h2>3 · ¿Hay patrón hoy?</h2>
+  <div class="seg" id="segPat">
+    <button data-v="1" class="on">SÍ<small>siempre en la central</small></button>
+    <button data-v="0">NO</button>
+  </div>
+  <div id="patHrow" style="margin-top:10px;">
+    <h2 style="font-size:13px;">¿Cuántas horas de torre hace?</h2>
+    <div class="seg" id="segPatH" style="flex-wrap:wrap;">
+      <button data-v="2">1h</button>
+      <button data-v="3">1,5h</button>
+      <button data-v="4">2h</button>
+      <button data-v="5">2,5h</button>
+      <button data-v="6" class="on">3h</button>
+      <button data-v="7">3,5h</button>
+      <button data-v="8">4h</button>
+    </div>
+  </div>
+  <div id="pat12row" style="margin-top:10px;">
+    <h2 style="font-size:13px;">¿Su primera torre a las 12:00?</h2>
+    <div class="seg" id="segPat12">
+      <button data-v="1" class="on">SÍ<small>sube a las 12, sea de 1h o 2h</small></button>
+      <button data-v="0">NO</button>
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <h2>4 · Socorristas <span>— toca 10h/12h para cambiar el turno</span></h2>
+  <div id="people"></div>
+  <button class="add" onclick="addPerson()">+ Añadir socorrista</button>
+  <div class="hint">Los del turno de las 10 abren torres a las 10:30 y bajan media hora antes de salir; los de las 12 suben a las 12:30 y cierran. Si las horas no salen exactas, la media hora extra se la llevan los primeros de la lista — cambia el orden otro día para rotar.</div>
+</div>
+
+<button class="go" onclick="generate()">Generar cuadrante</button>
+
+<div id="board">
+  <div class="boardHead"><b id="bTitle"></b><span id="bSub"></span></div>
+  <div class="grid">
+    <div class="rail" id="rail"></div>
+    <div class="cols" id="cols"></div>
+  </div>
+  <div class="totals">
+    <h3>Horas de torre</h3>
+    <div id="totals"></div>
+  </div>
+  <div id="warns"></div>
+  <div class="actions">
+    <button onclick="shareImage()" id="imgBtn">📷 Compartir imagen</button>
+    <button onclick="copyText()" id="copyBtn">Copiar texto</button>
+    <button onclick="generate()">Rehacer</button>
+  </div>
+  <div class="note">Toca cualquier bloque del cuadrante para cambiar a mano quién lo cubre.</div>
+</div>
+
+</div>
+
+<div id="sheet" onclick="closeSheet(event)">
+  <div class="panel">
+    <h4 id="sheetTitle">Asignar bloque</h4>
+    <div id="sheetOpts"></div>
+  </div>
+</div>
+
+<div id="imgOverlay" onclick="if(event.target.id==='imgOverlay')this.style.display='none'"
+     style="display:none; position:fixed; inset:0; background:rgba(8,63,99,.96); z-index:50; overflow:auto; padding:14px; text-align:center;">
+  <div style="margin:2px 0 10px;">
+    <button id="copyImgBtn" onclick="copyImage()"
+      style="padding:12px 18px; border:0; background:#F4A81C; color:#15242E; font-weight:800; font-size:14px; border-radius:8px; margin:0 4px;">📋 Copiar imagen</button>
+    <button onclick="downloadImage()"
+      style="padding:12px 18px; border:2px solid #fff; background:transparent; color:#fff; font-weight:800; font-size:14px; border-radius:8px; margin:0 4px;">⬇ Descargar</button>
+  </div>
+  <div style="color:#DCEEF8; font-weight:600; font-size:12px; margin-bottom:10px;">
+    Copia la imagen y pégala en el chat de WhatsApp.<br>También puedes probar a mantenerla pulsada.
+  </div>
+  <img id="imgResult" style="width:100%; max-width:460px; border-radius:8px;" alt="Cuadrante">
+  <div style="margin:14px 0 30px;">
+    <button onclick="document.getElementById('imgOverlay').style.display='none'"
+      style="padding:12px 28px; border:2px solid #fff; background:transparent; color:#fff; font-weight:800; font-size:14px; border-radius:8px;">Cerrar</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ---------- estado ---------- */
+const PLAYAS=[["PUERTO",["T1","T2","T3"]],["ALMARDA",["T4","T5","T6"]],["CORINTO",["T7","T8","T9"]]];
+let playa=0, mes="junsep", hayPatron=true, patronA12=true, patCells=6;
+let people=[
+  {name:"",shift:"early"},{name:"",shift:"early"},{name:"",shift:"early"},
+  {name:"",shift:"late"},{name:"",shift:"late"},{name:"",shift:"late"}
+];
+const LETTERS="ABCDEFGHIJKLMN";
+let towers=null, S=0, lastGen=null;
+
+/* ---------- selectores ---------- */
+function segInit(id,cb){
+  const seg=document.getElementById(id);
+  seg.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    seg.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); cb(b.dataset.v);
+  });
+}
+segInit("segPlaya",v=>playa=+v);
+segInit("segMes",v=>mes=v);
+segInit("segPat",v=>{ hayPatron=(v==="1");
+  document.getElementById("pat12row").style.display=hayPatron?"":"none";
+  document.getElementById("patHrow").style.display=hayPatron?"":"none"; });
+segInit("segPatH",v=>patCells=parseInt(v,10));
+segInit("segPat12",v=>patronA12=(v==="1"));
+
+/* ---------- lista de personas ---------- */
+function renderPeople(){
+  const box=document.getElementById("people"); box.innerHTML="";
+  people.forEach((p,i)=>{
+    const row=document.createElement("div"); row.className="person";
+    const inp=document.createElement("input");
+    inp.placeholder="Socorrista "+LETTERS[i]; inp.value=p.name;
+    inp.oninput=()=>p.name=inp.value;
+    const sh=document.createElement("button");
+    sh.className="pill"+(p.shift==="early"?" on":"");
+    sh.textContent=p.shift==="early"?"10h":"12h";
+    sh.onclick=()=>{p.shift=p.shift==="early"?"late":"early"; renderPeople();};
+    const del=document.createElement("button"); del.className="del"; del.textContent="×";
+    del.onclick=()=>{people.splice(i,1); renderPeople();};
+    row.append(inp,sh,del); box.appendChild(row);
+  });
+}
+function addPerson(){ if(people.length<14){people.push({name:"",shift:"late"}); renderPeople();} }
+renderPeople();
+
+/* ---------- utilidades de tiempo ---------- */
+function slotTime(s){ const m=10.5*60+s*30; const h=Math.floor(m/60), mm=m%60;
+  return h+":"+(mm<10?"0":"")+mm; }
+function fmtH(slots){ const h=slots/2; return (h%1===0)? h+"h" : (Math.floor(h)+"h30"); }
+
+/* ---------- generador ---------- */
+function generate(){
+  S = (mes==="junsep")?18:20;
+  /* ventanas de torre reales:
+     - los de las 10 bajan de torre media hora antes de acabar (17:30 jun/sep, 18:30 jul/ago)
+     - los de las 12 suben a las 12:30 (media hora tras entrar)
+     - las torres cierran media hora antes del fin del servicio (ya reflejado en S) */
+  const earlyEnd=(mes==="junsep")?14:16, lateStart=4, MAXRUN=4; /* máx. 2h seguidas */
+  /* pasadas: el descanso ideal entre tandas es 2h; solo se acorta si la cobertura lo exige */
+  const TIERS=[
+    {rest:4, quota:true , ideal:true }, /* 2h de descanso mínimo */
+    {rest:2, quota:true , ideal:false}, /* 1h si no queda otra */
+    {rest:1, quota:false, ideal:false}, /* 30 min, horas extra */
+    {rest:0, quota:false, ideal:false}  /* último recurso: pegado, sin pasar de 2h seguidas */
+  ];
+  const baseList=people.map((p,i)=>({
+    idx:i, name:p.name.trim()||("Socorrista "+LETTERS[i]),
+    letter:(p.name.trim()? p.name.trim()[0].toUpperCase() : LETTERS[i]),
+    pat:false,
+    ws:p.shift==="early"?0:lateStart,
+    we:p.shift==="early"?earlyEnd:S
+  }));
+  if(baseList.length<3){ alert("Hacen falta al menos 3 socorristas."); return; }
+
+  function rng(seed){ return function(){ seed|=0; seed=seed+0x6D2B79F5|0;
+    let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296; }; }
+
+  function attempt(seed){
+    const rnd=rng(seed);
+    const list=baseList.map(p=>({...p, intervals:[], towersUsed:new Set(), assigned:0}));
+    let patron=null;
+    if(hayPatron){
+      patron={idx:"P", name:"Patrón", letter:"P", pat:true, ws:0, we:S,
+        intervals:[], towersUsed:new Set(), assigned:0};
+      list.push(patron);
+    }
+    const tws=[Array(S).fill(null),Array(S).fill(null),Array(S).fill(null)];
+
+    /* patrón: primero cubre la central donde no hay 3 socorristas disponibles
+       (p. ej. solo 2 de un turno al abrir o cerrar) y completa hasta sus 3h */
+    let patronCells=0, patTarget=0;
+    if(patron){
+      const nEarly=list.filter(p=>!p.pat && p.ws===0).length;
+      const nLate=list.filter(p=>!p.pat && p.ws>0).length;
+      for(let t=0;t<S;t++){
+        const avail=(t<earlyEnd?nEarly:0)+(t>=lateStart?nLate:0);
+        if(avail<3 && tws[1][t]===null){ tws[1][t]="P"; patronCells++; }
+      }
+      /* pinzas junto a los anclajes, siempre en tramos de 1h (nunca 30 min sueltos) */
+      const runIfP=(t)=>{let n=1,k=t-1;while(k>=0&&tws[1][k]==="P"){n++;k--;}k=t+1;while(k<S&&tws[1][k]==="P"){n++;k++;}return n;};
+      const pinch=(t0)=>{
+        const c=[t0,t0+1];
+        if(c.some(t=>t<0||t>=S)) return;
+        if(c.every(t=>tws[1][t]===null)){
+          tws[1][c[0]]="P"; tws[1][c[1]]="P";
+          if(runIfP(c[0])>MAXRUN){ tws[1][c[0]]=null; tws[1][c[1]]=null; return; }
+          patronCells+=2;
+        } else {
+          /* si una celda ya es P, basta añadir la otra (se fusiona con su tramo) */
+          for(const t of c)
+            if(tws[1][t]===null && ((t>0&&tws[1][t-1]==="P")||(t+1<S&&tws[1][t+1]==="P")) && runIfP(t)<=MAXRUN){
+              tws[1][t]="P"; patronCells++;
+            }
+        }
+      };
+      const effStart=nLate+Math.max(0,nEarly-3);
+      if(effStart<3) pinch(lateStart);
+      const effEnd=nEarly+Math.max(0,nLate-3);
+      if(effEnd<3) pinch(earlyEnd-2);
+      /* tandas separadas al menos 1h de cualquier otro tramo suyo */
+      const farFrom=(st,L)=>{
+        for(let k=Math.max(0,st-2);k<Math.min(S,st+L+2);k++)
+          if(k<st||k>=st+L){ if(tws[1][k]==="P") return false; }
+        return true;
+      };
+      const tryStint=(st,L)=>{
+        if(st<0||st+L>S) return false;
+        if(!tws[1].slice(st,st+L).every(x=>x===null)) return false;
+        if(!farFrom(st,L)) return false;
+        for(let k=st;k<st+L;k++) tws[1][k]="P";
+        patronCells+=L; return true;
+      };
+      const opts1=[lateStart,lateStart+1,lateStart+2,lateStart+3].sort(()=>rnd()-0.5),
+            opts2=[earlyEnd-5,earlyEnd-4,earlyEnd-3].sort(()=>rnd()-0.5);
+      /* horas elegidas para el patrón (la cobertura forzada puede superarlas) */
+      const target=Math.max(patCells, patronCells);
+      patTarget=target;
+      /* primera tanda: a las 12:00 si la costumbre está activa */
+      let primera=false;
+      const rem1=target-patronCells;
+      if(rem1>=2){
+        const L1=(rem1>=6)?4:((rem1===5)?3:Math.min(rem1,4));
+        if(patronA12 && tws[1][3]===null){
+          /* L1±1 como alternativas; superar lo elegido queda penalizado en la puntuación */
+          let Ls=[L1,L1-1,L1+1].filter(L=>L>=2&&L<=4&&(rem1-L)!==1);
+          if(Ls.length>1 && rnd()<0.35) Ls=[Ls[Ls.length-1]].concat(Ls.slice(0,-1));
+          for(const L of Ls){
+            if(tryStint(3,L)){ primera=true; break; }
+          }
+        }
+        if(!primera){
+          for(const st of opts1){ if(tryStint(st,L1)){ primera=true; break; } }
+        }
+      }
+      /* segunda tanda: hacia el final de la mañana */
+      const rem2=target-patronCells;
+      if(rem2>=2){
+        const L2=Math.min(rem2,4);
+        for(const st of opts2){ if(tryStint(st,L2)) break; }
+      }
+      patron.quota=patronCells; patron.assigned=patronCells; patron.remaining=0;
+      patron.towersUsed.add(1);
+      let t=0;
+      while(t<S){
+        if(tws[1][t]==="P"){ const a=t; while(t<S&&tws[1][t]==="P")t++; patron.intervals.push([a,t]); }
+        else t++;
+      }
+    }
+
+    /* cuota del resto */
+    const total=3*S-patronCells;
+    const rest=list.filter(p=>!p.pat);
+    const base=Math.floor(total/rest.length), extra=total-base*rest.length;
+    rest.forEach((p,i)=>{ p.quota=base+(i<extra?1:0); p.remaining=p.quota;
+      p.maxStint=Math.min(MAXRUN,Math.max(2,Math.ceil(p.quota/2))); });
+
+    /* anclar apertura y cierre con tandas completas de 2h, como en los
+       cuadrantes reales: los de las 10 abren y los de las 12 cierran */
+    function anchor(t0,t1,group){
+      const libres=[]; for(let tw=0;tw<3;tw++) if(tws[tw].slice(t0,t1).every(x=>x===null)) libres.push(tw);
+      const pool=group.slice().sort(()=>rnd()-0.5);
+      for(const tw of libres){
+        const p=pool.shift(); if(!p) break;
+        let len=Math.min(t1-t0,p.quota);
+        if(p.quota-len===1) len-=1;
+        const a=(t0===0)? 0 : t1-len; /* apertura pegada al inicio, cierre pegado al final */
+        for(let k=a;k<a+len;k++) tws[tw][k]=p.idx;
+        p.intervals.push([a,a+len,tw]); p.intervals.sort((x,y)=>x[0]-y[0]);
+        p.remaining-=len; p.assigned+=len; p.towersUsed.add(tw);
+      }
+    }
+    anchor(0, lateStart, rest.filter(p=>p.ws===0));
+    anchor(earlyEnd, S, rest.filter(p=>p.ws>0));
+
+    const chainBefore=(p,t)=>{let n=0,x=t,m=true;while(m){m=false;for(const [a,b] of p.intervals){if(b===x){n+=b-a;x=a;m=true;break;}}}return n;};
+    const chainAfter=(p,t)=>{let n=0,x=t,m=true;while(m){m=false;for(const [a,b] of p.intervals){if(a===x){n+=b-a;x=b;m=true;break;}}}return n;};
+
+    const startTier=(seed%3===2)?1:0; /* algunos intentos empiezan más compactos para encajes exactos */
+    for(let ti=startTier;ti<TIERS.length;ti++){
+      const T=TIERS[ti];
+      let guard=0;
+      while(guard++<600){
+        let found=null;
+        outer: for(let t=0;t<S;t++) for(let tw=0;tw<3;tw++)
+          if(tws[tw][t]===null){ found=[t,tw]; break outer; }
+        if(!found) break;
+        const [t,tw]=found;
+        let run=0; while(t+run<S && tws[tw][t+run]===null) run++;
+
+        const cands=[];
+        for(const p of list){
+          if(p.pat && !(ti>=2 && tw===1)) continue;
+          if(T.quota && p.remaining<=0) continue;
+          if(t<p.ws || t>=p.we) continue;
+          let ok=true, maxLen=Math.min(run, p.we-t, MAXRUN);
+          if(T.rest>0){
+            for(const [a,b] of p.intervals){
+              if(b<=t){ if(t < b+T.rest){ ok=false; break; } }      /* descanso tras la tanda anterior */
+              else if(a>=t+1){ maxLen=Math.min(maxLen, a-T.rest-t); } /* descanso antes de la siguiente */
+              else { ok=false; break; }                              /* solape */
+            }
+          } else {
+            /* pegado permitido solo en la misma torre (nada de saltar de torre
+               sin margen), sin solapar ni superar 2h continuas */
+            for(const [a,b,itw] of p.intervals){
+              if(t<b && t+1>a){ ok=false; break; }
+              if(b===t && itw!==tw){ ok=false; break; }
+              if(a>=t+1) maxLen=Math.min(maxLen, itw===tw ? a-t : a-1-t);
+            }
+            if(ok){
+              const before=chainBefore(p,t);
+              let L=Math.min(maxLen, MAXRUN-before);
+              while(L>=1 && before+L+chainAfter(p,t+L)>MAXRUN) L--;
+              maxLen=L;
+            }
+          }
+          if(!ok) continue;
+          let len=maxLen, full=true;
+          if(T.quota){
+            /* trocear la cuota en tandas de 1-2h, idealmente 2 al día:
+               8→4+4, 7→4+3, 6→4+2, 5→3+2; nunca dejar un resto de 30 min */
+            const nextStint=(rem)=>rem>=6?4:(rem===5?3:rem);
+            const target=Math.min(nextStint(p.remaining), MAXRUN);
+            len=Math.min(len, target);
+            if(p.remaining-len===1) len-=1;
+            if(len<2) continue;                 /* tanda mínima: 1h */
+            full=(len===target);
+          } else {
+            len=Math.min(len, MAXRUN);
+            /* medias horas sueltas: solo en la ultimísima pasada, antes que dejar torre vacía */
+            if(T.rest>0 && len<2) continue;
+          }
+          if(len<1) continue;
+          cands.push({p,len,full});
+        }
+        if(!cands.length){ tws[tw][t]=(ti===TIERS.length-1)?"GAP":"SKIP"; continue; }
+        if(T.quota){
+          cands.sort((x,y)=>
+            (x.p.intervals.length-y.p.intervals.length) ||
+            ((y.full?1:0)-(x.full?1:0)) ||
+            (x.p.we-y.p.we) ||
+            ((x.p.towersUsed.has(tw)?1:0)-(y.p.towersUsed.has(tw)?1:0)) ||
+            (y.p.remaining-x.p.remaining));
+        } else {
+          cands.sort((x,y)=>(x.p.assigned-y.p.assigned));
+        }
+        const pick=cands[Math.floor(rnd()*Math.min(cands.length, ti===0?2:3))];
+        const {p,len}=pick;
+        for(let k=t;k<t+len;k++) tws[tw][k]=p.idx;
+        p.intervals.push([t,t+len,tw]); p.intervals.sort((a,b)=>a[0]-b[0]);
+        p.remaining-=len; p.towersUsed.add(tw); p.assigned+=len;
+      }
+      if(ti<TIERS.length-1) for(let tw=0;tw<3;tw++) for(let t=0;t<S;t++)
+        if(tws[tw][t]==="SKIP") tws[tw][t]=null;
+    }
+
+    /* puntuación: 1º cobertura, 2º sin tandas de 30 min, 3º pocas subidas
+       (ideal 2 por persona), 4º descanso mínimo largo, 5º reparto equilibrado */
+    let gaps=0;
+    for(let tw=0;tw<3;tw++) for(let t=0;t<S;t++) if(tws[tw][t]==="GAP") gaps++;
+    let minRest=Infinity, extraStints=0, shortStints=0;
+    for(const p of list){
+      let prevEnd=null, run=0, chains=0;
+      for(let t=0;t<=S;t++){
+        const on=(t<S)&&(tws[0][t]===p.idx||tws[1][t]===p.idx||tws[2][t]===p.idx);
+        if(on){ if(run===0 && prevEnd!==null) minRest=Math.min(minRest, t-prevEnd); run++; }
+        else { if(run>0){ chains++; if(run<2) shortStints++; prevEnd=t; } run=0; }
+      }
+      if(!p.pat) extraStints+=Math.max(0,chains-2);
+    }
+    if(minRest===Infinity) minRest=99;
+    const hrs=rest.map(p=>p.assigned);
+    const spread=Math.max.apply(null,hrs)-Math.min.apply(null,hrs);
+    const pt=list.find(p=>p.pat);
+    const patExcess=pt? Math.max(0, pt.assigned-patTarget) : 0;
+    return {tws,list,gaps,shortStints,extraStints,minRest,spread,patExcess};
+  }
+
+  /* muchos intentos con barajados distintos; nos quedamos con el mejor:
+     1º cobertura, 2º sin tandas de 30 min, 3º nadie descansa menos de 1h,
+     4º horas equilibradas (±30 min), 5º pocas subidas, 6º descansos largos */
+  const scoreOf=r=>[r.gaps, r.shortStints, (r.minRest<2?1:0), r.patExcess, Math.max(0,r.spread-1), r.extraStints, -r.minRest, r.spread];
+  const better=(a,b)=>{ const A=scoreOf(a),B=scoreOf(b);
+    for(let i=0;i<A.length;i++){ if(A[i]!==B[i]) return A[i]<B[i]; } return false; };
+  let best=null;
+  for(let seed=1;seed<=1500;seed++){
+    const r=attempt(seed);
+    if(!best || better(r,best)) best=r;
+    if(best.gaps===0 && best.shortStints===0 && best.patExcess===0 && best.extraStints===0 && best.minRest>=4 && best.spread<=1) break;
+    if(seed>=400 && best.gaps===0 && best.shortStints===0 && best.patExcess===0 && best.extraStints===0) break;
+  }
+  towers=best.tws;
+  const byIdx={}; best.list.forEach(p=>byIdx[p.idx]=p);
+  lastGen={list:best.list,byIdx};
+  renderBoard();
+}
+
+/* ---------- render ---------- */
+function blocksOf(tw){
+  const out=[]; let t=0;
+  while(t<S){
+    const v=towers[tw][t]; let len=1;
+    while(t+len<S && towers[tw][t+len]===v) len++;
+    out.push({t,len,v}); t+=len;
+  }
+  return out;
+}
+function renderBoard(){
+  const {byIdx,list}=lastGen;
+  const slotH=32;
+  document.getElementById("board").style.display="block";
+  document.getElementById("bTitle").textContent=PLAYAS[playa][0];
+  document.getElementById("bSub").textContent=(mes==="junsep"?"jun/sep · ":"jul/ago · ")+slotTime(0)+"–"+slotTime(S);
+
+  const rail=document.getElementById("rail");
+  rail.innerHTML=""; rail.style.height=(S*slotH+30)+"px";
+  for(let t=0;t<=S;t+=2){
+    const d=document.createElement("div");
+    d.style.top=(30+t*slotH)+"px"; d.textContent=slotTime(t);
+    rail.appendChild(d);
+  }
+
+  const cols=document.getElementById("cols"); cols.innerHTML="";
+  for(let tw=0;tw<3;tw++){
+    const col=document.createElement("div"); col.className="col";
+    const h=document.createElement("div"); h.className="colHead";
+    h.textContent=PLAYAS[playa][1][tw]; col.appendChild(h);
+    const body=document.createElement("div"); body.className="colBody";
+    body.style.height=(S*slotH)+"px";
+    for(let t=2;t<S;t+=2){
+      const l=document.createElement("div"); l.className="hrline"; l.style.top=(t*slotH)+"px";
+      body.appendChild(l);
+    }
+    blocksOf(tw).forEach((b,bi)=>{
+      const d=document.createElement("div");
+      d.style.top=(b.t*slotH)+"px"; d.style.height=(b.len*slotH)+"px";
+      if(b.v==="GAP"){
+        d.className="blk gap";
+        d.innerHTML='<div class="L">SIN CUBRIR</div>';
+      }else{
+        const p=byIdx[b.v];
+        d.className="blk "+(p.pat?"pat":(bi%2? "b":"a"));
+        d.innerHTML='<div class="L">'+p.letter+'</div>'+
+          (p.pat?'':'<div class="n">'+p.name+'</div>')+
+          '<div class="t">'+slotTime(b.t)+"–"+slotTime(b.t+b.len)+'</div>';
+      }
+      d.onclick=()=>openSheet(tw,b.t,b.len);
+      body.appendChild(d);
+    });
+    col.appendChild(body); cols.appendChild(col);
+  }
+
+  /* totales */
+  const counts={}; let gaps=[];
+  for(let tw=0;tw<3;tw++) for(let t=0;t<S;t++){
+    const v=towers[tw][t];
+    if(v==="GAP") gaps.push([tw,t]);
+    else if(v!==null) counts[v]=(counts[v]||0)+1;
+  }
+  const tot=document.getElementById("totals"); tot.innerHTML="";
+  list.forEach(p=>{
+    const c=counts[p.idx]||0;
+    const row=document.createElement("div"); row.className="trow";
+    const diff=(c!==p.quota)? ' <span style="color:var(--muted)">(previsto '+fmtH(p.quota)+')</span>':"";
+    const label=p.pat? "P · Patrón" : p.letter+" · "+p.name;
+    row.innerHTML="<span>"+label+"</span><b>"+fmtH(c)+diff+"</b>";
+    tot.appendChild(row);
+  });
+
+  /* avisos */
+  const w=document.getElementById("warns"); w.innerHTML="";
+  const msgs=[];
+  if(gaps.length){
+    const ranges={};
+    gaps.forEach(([tw,t])=>{ (ranges[tw]=ranges[tw]||[]).push(t); });
+    for(const tw in ranges){
+      const ts=ranges[tw];
+      msgs.push(PLAYAS[playa][1][tw]+" sin cubrir de "+slotTime(ts[0])+" a "+slotTime(ts[ts.length-1]+1)+".");
+    }
+    msgs.push("O falta gente de ese turno en esa franja, o el encaje no sale con todas las reglas (mín. 1h, máx. 2h, descansos). Arréglalo tocando los bloques: por ejemplo, pon al patrón en la central en esa franja y pasa a ese socorrista a la torre libre.");
+  }
+  /* solapes tras edición manual */
+  list.forEach(p=>{
+    for(let t=0;t<S;t++){
+      let n=0;
+      for(let tw=0;tw<3;tw++) if(towers[tw][t]===p.idx) n++;
+      if(n>1){ msgs.push("⚠ "+p.name+" está en dos torres a la vez a las "+slotTime(t)+"."); break; }
+    }
+  });
+  /* más de 2h seguidas tras edición manual */
+  list.forEach(p=>{
+    let run=0;
+    for(let t=0;t<=S;t++){
+      const on=(t<S)&&(towers[0][t]===p.idx||towers[1][t]===p.idx||towers[2][t]===p.idx);
+      if(on) run++;
+      else{ if(run>4){ msgs.push("⚠ "+p.name+" hace más de 2h seguidas de torre."); break; } run=0; }
+    }
+  });
+  /* descansos demasiado cortos entre tandas */
+  list.forEach(p=>{
+    let prevEnd=null, run=0;
+    for(let t=0;t<=S;t++){
+      const on=(t<S)&&(towers[0][t]===p.idx||towers[1][t]===p.idx||towers[2][t]===p.idx);
+      if(on){
+        if(run===0 && prevEnd!==null && t-prevEnd<2){
+          msgs.push("⚠ "+p.name+" vuelve a la torre a las "+slotTime(t)+" con menos de 1h de descanso.");
+          prevEnd=null;
+        }
+        run++;
+      } else { if(run>0) prevEnd=t; run=0; }
+    }
+  });
+  /* tandas de menos de 1h tras edición manual */
+  list.forEach(p=>{
+    let run=0, start=0;
+    for(let t=0;t<=S;t++){
+      const on=(t<S)&&(towers[0][t]===p.idx||towers[1][t]===p.idx||towers[2][t]===p.idx);
+      if(on){ if(run===0) start=t; run++; }
+      else { if(run===1) msgs.push("⚠ "+p.name+" tiene una tanda de solo 30 min a las "+slotTime(start)+"."); run=0; }
+    }
+  });
+  /* cambio de torre sin margen tras edición manual */
+  list.forEach(p=>{
+    let prevTw=null;
+    for(let t=0;t<S;t++){
+      let myTw=null;
+      for(let tw=0;tw<3;tw++) if(towers[tw][t]===p.idx) myTw=tw;
+      if(myTw!==null && prevTw!==null && myTw!==prevTw){
+        msgs.push("⚠ "+p.name+" cambia de torre a las "+slotTime(t)+" sin margen para desplazarse.");
+        break;
+      }
+      prevTw=myTw;
+    }
+  });
+  if(msgs.length){
+    const d=document.createElement("div"); d.className="warn";
+    d.innerHTML="<b>Avisos</b>"+msgs.map(m=>"<div>· "+m+"</div>").join("");
+    w.appendChild(d);
+  }
+}
+
+/* ---------- edición manual ---------- */
+let editing=null;
+function openSheet(tw,t,len){
+  editing={tw,t,len};
+  document.getElementById("sheetTitle").textContent=
+    PLAYAS[playa][1][tw]+" · "+slotTime(t)+"–"+slotTime(t+len);
+  const box=document.getElementById("sheetOpts"); box.innerHTML="";
+  lastGen.list.forEach(p=>{
+    const b=document.createElement("button");
+    b.textContent=p.pat? "P · Patrón" : p.letter+" · "+p.name;
+    b.onclick=()=>{ assign(p.idx); };
+    box.appendChild(b);
+  });
+  const empty=document.createElement("button");
+  empty.textContent="Dejar sin cubrir";
+  empty.onclick=()=>assign("GAP");
+  box.appendChild(empty);
+  const c=document.createElement("button"); c.className="cancel"; c.textContent="Cancelar";
+  c.onclick=()=>document.getElementById("sheet").style.display="none";
+  box.appendChild(c);
+  document.getElementById("sheet").style.display="block";
+}
+function assign(v){
+  const {tw,t,len}=editing;
+  for(let k=t;k<t+len;k++) towers[tw][k]=v;
+  document.getElementById("sheet").style.display="none";
+  renderBoard();
+}
+function closeSheet(e){ if(e.target.id==="sheet") e.target.style.display="none"; }
+
+/* ---------- exportar imagen ---------- */
+function shareImage(){
+  const {byIdx,list}=lastGen;
+  const nE=list.filter(p=>!p.pat&&p.ws===0).length;
+  const nL=list.filter(p=>!p.pat&&p.ws>0).length;
+  const nSoc=nE+nL;
+
+  const sc=2;                       /* nitidez x2 */
+  const railW=52, colW=118, gap=8, pad=16;
+  const slotH=30, headH=96, colHead=30;
+  const totRows=Math.ceil(list.length/2);
+  const totH=34+totRows*24+10;
+  const W=pad*2+railW+colW*3+gap*2;
+  const H=headH+colHead+S*slotH+totH+pad;
+
+  const cv=document.createElement("canvas");
+  cv.width=W*sc; cv.height=H*sc;
+  const ctx=cv.getContext("2d"); ctx.scale(sc,sc);
+
+  /* fondo arena y cabecera azul */
+  ctx.fillStyle="#F8F1E3"; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="#0B5E93"; ctx.fillRect(0,0,W,headH-10);
+  ctx.fillStyle="#F4A81C"; ctx.fillRect(0,headH-10,W,5);
+  ctx.fillStyle="#fff"; ctx.font="800 22px system-ui,sans-serif";
+  ctx.fillText("CUADRANTE · "+PLAYAS[playa][0], pad, 32);
+  ctx.font="600 13px system-ui,sans-serif"; ctx.fillStyle="#DCEEF8";
+  ctx.fillText("Cuadrante de "+nSoc+" · "+nE+" a las 10 · "+nL+" a las 12 · "+(hayPatron?"con patrón":"sin patrón"), pad, 54);
+  ctx.fillText((mes==="junsep"?"jun/sep":"jul/ago")+" · torres "+slotTime(0)+"–"+slotTime(S), pad, 72);
+
+  const gy=headH+colHead;           /* inicio de la rejilla */
+
+  /* rail de horas */
+  ctx.fillStyle="#6E7B85"; ctx.font="600 11px system-ui,sans-serif"; ctx.textAlign="right";
+  for(let t=0;t<=S;t+=2){
+    ctx.fillText(slotTime(t), pad+railW-8, gy+t*slotH+4);
+    ctx.strokeStyle="#D8CDB4"; ctx.beginPath();
+    ctx.moveTo(pad+railW, gy+t*slotH); ctx.lineTo(W-pad, gy+t*slotH); ctx.stroke();
+  }
+  ctx.textAlign="left";
+
+  /* columnas de torres */
+  for(let tw=0;tw<3;tw++){
+    const x=pad+railW+tw*(colW+gap);
+    ctx.fillStyle="#083F63"; ctx.font="800 14px system-ui,sans-serif"; ctx.textAlign="center";
+    ctx.fillText(PLAYAS[playa][1][tw], x+colW/2, headH+20);
+    blocksOf(tw).forEach((b,bi)=>{
+      const y=gy+b.t*slotH, h=b.len*slotH;
+      if(b.v===null) return;
+      if(b.v==="GAP"){
+        ctx.fillStyle="#fff"; ctx.fillRect(x,y+1,colW,h-2);
+        ctx.strokeStyle="#B3403C"; ctx.setLineDash([5,4]); ctx.lineWidth=2;
+        ctx.strokeRect(x+1,y+2,colW-2,h-4); ctx.setLineDash([]); ctx.lineWidth=1;
+        ctx.fillStyle="#B3403C"; ctx.font="800 11px system-ui,sans-serif";
+        ctx.fillText("SIN CUBRIR", x+colW/2, y+h/2+4);
+        return;
+      }
+      const p=byIdx[b.v];
+      if(p.pat){
+        /* rayado naranja del patrón */
+        ctx.save(); ctx.beginPath(); ctx.rect(x,y+1,colW,h-2); ctx.clip();
+        ctx.fillStyle="#FFDF9E"; ctx.fillRect(x,y+1,colW,h-2);
+        ctx.strokeStyle="#F4A81C"; ctx.lineWidth=6;
+        for(let k=-h;k<colW+h;k+=16){
+          ctx.beginPath(); ctx.moveTo(x+k,y+h); ctx.lineTo(x+k+h,y); ctx.stroke();
+        }
+        ctx.restore(); ctx.lineWidth=1;
+      }else{
+        ctx.fillStyle=(bi%2)? "#DCEEF8" : "#0B5E93";
+        ctx.fillRect(x,y+1,colW,h-2);
+      }
+      const dark=p.pat||(bi%2);
+      ctx.fillStyle=dark? "#15242E" : "#fff";
+      ctx.font="800 16px system-ui,sans-serif";
+      ctx.fillText(p.letter, x+colW/2, y+h/2-2);
+      ctx.font="600 10px system-ui,sans-serif";
+      const nm=p.pat? "" : (p.name||"").slice(0,14);
+      if(nm) ctx.fillText(nm, x+colW/2, y+h/2+11);
+      ctx.font="600 9px system-ui,sans-serif";
+      ctx.fillStyle=dark? "#6E7B85" : "#DCEEF8";
+      ctx.fillText(slotTime(b.t)+"–"+slotTime(b.t+b.len), x+colW/2, y+h-6);
+    });
+  }
+  ctx.textAlign="left";
+
+  /* horas por persona */
+  const counts={};
+  for(let tw=0;tw<3;tw++) for(let t=0;t<S;t++){
+    const v=towers[tw][t]; if(v!==null&&v!=="GAP") counts[v]=(counts[v]||0)+1;
+  }
+  let ty=gy+S*slotH+26;
+  ctx.fillStyle="#083F63"; ctx.font="800 13px system-ui,sans-serif";
+  ctx.fillText("HORAS DE TORRE", pad, ty); ty+=20;
+  ctx.font="600 12px system-ui,sans-serif";
+  list.forEach((p,i)=>{
+    const col=i%2, x=pad+col*((W-pad*2)/2);
+    const label=(p.pat?"P":p.letter+" "+(p.name||""))+" — "+fmtH(counts[p.idx]||0);
+    ctx.fillStyle="#15242E";
+    ctx.fillText(label.slice(0,26), x, ty);
+    if(col) ty+=24;
+  });
+
+  cv.toBlob(blob=>{
+    lastImgBlob=blob;
+    const showOverlay=()=>{
+      /* data URL: es lo único que el visor de Claude deja mostrar */
+      document.getElementById("imgResult").src=cv.toDataURL("image/png");
+      document.getElementById("imgOverlay").style.display="block";
+    };
+    const enVisor = (window.self!==window.top);  /* dentro del visor de Claude */
+    if(enVisor){ showOverlay(); return; }
+    try{
+      const file=new File([blob],"cuadrante.png",{type:"image/png"});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        navigator.share({files:[file],title:"Cuadrante "+PLAYAS[playa][0]})
+          .catch(()=>showOverlay());
+      }else showOverlay();
+    }catch(e){ showOverlay(); }
+  },"image/png");
+}
+let lastImgBlob=null;
+function copyImage(){
+  const b=document.getElementById("copyImgBtn");
+  const ok=()=>{ b.textContent="Copiada ✓ Pégala en WhatsApp"; setTimeout(()=>b.textContent="📋 Copiar imagen",2500); };
+  const ko=()=>{ b.textContent="No permitido aquí"; setTimeout(()=>b.textContent="📋 Copiar imagen",2000); };
+  try{
+    navigator.clipboard.write([new ClipboardItem({"image/png":lastImgBlob})]).then(ok).catch(ko);
+  }catch(e){ ko(); }
+}
+function downloadImage(){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(lastImgBlob);
+  a.download="cuadrante-"+PLAYAS[playa][0].toLowerCase()+".png";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+/* ---------- copiar ---------- */
+function copyText(){
+  const {byIdx,list}=lastGen;
+  let out="CUADRANTE "+PLAYAS[playa][0]+" ("+(mes==="junsep"?"jun/sep":"jul/ago")+")\n";
+  for(let tw=0;tw<3;tw++){
+    out+="\n"+PLAYAS[playa][1][tw]+"\n";
+    blocksOf(tw).forEach(b=>{
+      const who=(b.v==="GAP")?"— sin cubrir —":(byIdx[b.v].pat?"P (patrón)":byIdx[b.v].name);
+      out+=slotTime(b.t)+"–"+slotTime(b.t+b.len)+"  "+who+"\n";
+    });
+  }
+  const counts={};
+  for(let tw=0;tw<3;tw++) for(let t=0;t<S;t++){
+    const v=towers[tw][t]; if(v!==null&&v!=="GAP") counts[v]=(counts[v]||0)+1;
+  }
+  out+="\nHoras: "+list.map(p=>(p.pat?"P":p.name)+" "+fmtH(counts[p.idx]||0)).join(" · ");
+  const done=()=>{ const b=document.getElementById("copyBtn");
+    b.textContent="Copiado ✓"; setTimeout(()=>b.textContent="Copiar texto",1500); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(out).then(done).catch(()=>fallbackCopy(out,done));
+  } else fallbackCopy(out,done);
+}
+function fallbackCopy(txt,done){
+  const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta);
+  ta.select(); try{document.execCommand("copy");}catch(e){}
+  document.body.removeChild(ta); done();
+}
+</script>
+</body>
+</html>
