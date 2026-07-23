@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Cuadrantes de torres</title>
+<style>
+  :root{
+    --ocean:#0B5E93;      /* azul océano */
+    --ocean-dark:#083F63;
+    --sky:#DCEEF8;        /* azul claro */
+    --sun:#F4A81C;        /* naranja socorrista */
+    --sun-soft:#FFDF9E;
+    --sand:#F8F1E3;       /* arena */
+    --ink:#15242E;
+    --paper:#fff;
+    --line:#D8CDB4;
+    --muted:#6E7B85;
+    --slotH:32px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{margin:0; background:var(--sand); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; font-size:15px; line-height:1.35;}
+  .wrap{max-width:520px; margin:0 auto; padding:0 14px 90px;}
+
+  header{background:var(--ocean); color:#fff; margin:0 -14px 18px; padding:20px 14px 14px;
+    border-bottom:6px solid var(--sun);}
+  .eyebrow{font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--sky); font-weight:600;}
+  h1{margin:2px 0 0; font-size:30px; font-weight:900; letter-spacing:-.02em; text-transform:uppercase;}
+
+  .step{margin-bottom:18px;}
+  .step h2{font-size:12px; letter-spacing:.14em; text-transform:uppercase; margin:0 0 8px;
+    font-weight:800; color:var(--ocean-dark);}
+  .step h2 span{color:var(--muted); font-weight:600; text-transform:none; letter-spacing:0;}
+
+  .seg{display:flex; gap:6px;}
+  .seg button{flex:1; padding:10px 4px; border:2px solid var(--ocean); background:var(--paper);
+    font-weight:800; font-size:13px; cursor:pointer; color:var(--ocean-dark); border-radius:8px;}
+  .seg button small{display:block; font-weight:500; font-size:10px; color:var(--muted); margin-top:2px;}
+  .seg button.on{background:var(--ocean); color:#fff;}
+  .seg button.on small{color:var(--sky);}
+  #segPat button{border-color:var(--sun);}
+  #segPat button.on{background:repeating-linear-gradient(45deg,var(--sun) 0 6px,var(--sun-soft) 6px 12px);
+    color:var(--ink); border-color:var(--ink);}
+  #segPat button.on small{color:var(--ink);}
+
+  .person{display:flex; align-items:center; gap:6px; margin-bottom:6px;}
+  .person input{flex:1; min-width:0; padding:9px 10px; border:2px solid var(--ocean); font-size:15px;
+    font-weight:600; background:var(--paper); border-radius:8px; color:var(--ink);}
+  .pill{padding:9px 0; width:52px; text-align:center; border:2px solid var(--ocean); background:var(--paper);
+    font-weight:800; font-size:13px; cursor:pointer; flex:none; border-radius:8px; color:var(--ocean-dark);}
+  .pill.on{background:var(--ocean); color:#fff;}
+  .del{width:34px; padding:9px 0; border:2px solid var(--line); background:var(--paper);
+    color:var(--muted); font-weight:800; cursor:pointer; flex:none; border-radius:8px;}
+
+  .add{width:100%; padding:10px; border:2px dashed var(--ocean); background:transparent;
+    font-weight:800; font-size:14px; cursor:pointer; margin-top:4px; color:var(--ocean-dark); border-radius:8px;}
+  .hint{font-size:12px; color:var(--muted); margin-top:8px;}
+
+  .go{width:100%; padding:15px; border:none; background:var(--sun); color:var(--ink);
+    font-weight:900; font-size:17px; letter-spacing:.06em; text-transform:uppercase; cursor:pointer;
+    margin-top:6px; border-radius:10px; box-shadow:0 3px 0 var(--ocean-dark);}
+  .go:active{transform:translateY(2px); box-shadow:0 1px 0 var(--ocean-dark);}
+
+  /* ---- tablero ---- */
+  #board{display:none; margin-top:26px; background:var(--paper); border-radius:12px;
+    padding:12px; border:2px solid var(--ocean);}
+  .boardHead{border-bottom:4px solid var(--sun); padding-bottom:8px;
+    display:flex; justify-content:space-between; align-items:baseline;}
+  .boardHead b{font-size:22px; font-weight:900; text-transform:uppercase; color:var(--ocean-dark);}
+  .boardHead span{font-size:12px; color:var(--muted); font-weight:600;}
+
+  .grid{display:flex; margin-top:10px;}
+  .rail{width:44px; flex:none; position:relative;
+    font-family:ui-monospace,Menlo,monospace; font-size:10px; color:var(--muted);}
+  .rail div{position:absolute; right:6px; transform:translateY(-50%);}
+  .cols{flex:1; display:flex; gap:5px;}
+  .col{flex:1; min-width:0;}
+  .colHead{text-align:center; font-weight:900; font-size:16px; padding:5px 0;
+    background:var(--ocean); color:#fff; border-radius:6px 6px 0 0;}
+  .colBody{position:relative; border:1px solid var(--line); border-top:none;}
+
+  .blk{position:absolute; left:0; right:0; border-top:2px solid var(--ocean);
+    padding:3px 4px; overflow:hidden; cursor:pointer;}
+  .blk .L{font-size:24px; font-weight:900; line-height:1; color:var(--ocean-dark);}
+  .blk .n{font-size:10px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .blk .t{font-size:9px; color:var(--muted); font-family:ui-monospace,Menlo,monospace;}
+  .blk.a{background:var(--paper);} .blk.b{background:var(--sky);}
+  .blk.pat{background:repeating-linear-gradient(45deg,var(--sun-soft) 0 7px,#fff 7px 14px);
+    border-top-color:var(--sun);}
+  .blk.pat .L{color:var(--ink);}
+  .blk.gap{background:var(--sand); border-top:2px dashed var(--muted); color:var(--muted); text-align:center;}
+  .blk.gap .L{font-size:13px; font-weight:700; margin-top:4px; color:var(--muted);}
+  .hrline{position:absolute; left:0; right:0; border-top:1px dotted var(--line); pointer-events:none;}
+
+  .totals{margin-top:14px; border-top:3px solid var(--ocean); padding-top:8px;}
+  .taskstrip{background:#FFF3D6;border:1.5px solid var(--sun);border-radius:9px;
+    padding:8px 11px;margin:8px 0;font-size:12.5px;line-height:1.5;color:#4a3a10;}
+  .taskstrip b{color:var(--ocean-deep,#083F63);}
+  .totals h3{font-size:12px; letter-spacing:.14em; text-transform:uppercase; margin:0 0 6px; color:var(--ocean-dark);}
+  .trow{display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--line); font-size:14px;}
+  .trow b{font-weight:800; color:var(--ocean-dark);}
+  .warn{margin-top:10px; border:2px solid var(--sun); padding:10px; font-size:13px;
+    background:var(--sun-soft); border-radius:8px;}
+  .warn b{display:block; margin-bottom:4px;}
+
+  .actions{display:flex; gap:8px; margin-top:14px;}
+  .actions button{flex:1; padding:12px; border:2px solid var(--ocean); background:var(--paper);
+    font-weight:800; font-size:14px; cursor:pointer; color:var(--ocean-dark); border-radius:8px;}
+  .note{font-size:12px; color:var(--muted); margin-top:10px;}
+
+  /* editor de bloque */
+  #sheet{display:none; position:fixed; inset:0; background:rgba(8,63,99,.5); z-index:10;}
+  #sheet .panel{position:absolute; bottom:0; left:0; right:0; background:var(--paper);
+    border-top:5px solid var(--sun); padding:14px; max-height:70%; overflow:auto;
+    border-radius:14px 14px 0 0;}
+  #sheet h4{margin:0 0 10px; font-size:14px; font-weight:900; text-transform:uppercase; color:var(--ocean-dark);}
+  #sheet button{display:block; width:100%; text-align:left; padding:11px; margin-bottom:6px;
+    border:2px solid var(--ocean); background:var(--paper); font-weight:700; font-size:15px;
+    cursor:pointer; border-radius:8px; color:var(--ink);}
+  #sheet button.cancel{border-color:var(--line); color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Socorrismo · Puerto — Almarda — Corinto</div>
+  <h1>Cuadrante de torres</h1>
+</header>
+
+<div id="saludo" style="display:none;background:linear-gradient(135deg,#0B5E93,#0e76b5);color:#fff;
+  border-radius:12px;padding:12px 14px;margin-bottom:12px;font-weight:700;font-size:14px;"></div>
+
+<div class="step">
+  <h2>Día <span>· carga la plantilla oficial (siempre editable)</span></h2>
+  <input type="date" id="fecha" onchange="fechaCambiada()"
+    style="width:100%;padding:12px;border:2px solid var(--ocean);border-radius:9px;
+    font-size:16px;font-weight:700;color:var(--ink);background:#fff;">
+  <div id="fechaInfo" style="font-size:12px;color:var(--muted);margin-top:6px;"></div>
+</div>
+
+<div class="step">
+  <h2>1 · Playa</h2>
+  <div class="seg" id="segPlaya">
+    <button data-v="0" class="on">PUERTO<small>T1 · T2 · T3</small></button>
+    <button data-v="1">ALMARDA<small>T4 · T5 · T6</small></button>
+    <button data-v="2">CORINTO<small>T7 · T8 · T9</small></button>
+  </div>
+</div>
+
+<div class="step" id="mvRow" style="display:none;">
+  <h2>¿Abrir posta Malvarrosa?</h2>
+  <div class="seg" id="segMalva">
+    <button data-v="1" class="on">SÍ<small>en pareja con T9: relevo cercano</small></button>
+    <button data-v="0">NO<small>cerrada hoy</small></button>
+  </div>
+</div>
+
+<div class="step">
+  <h2>2 · Mes</h2>
+  <div class="seg" id="segMes">
+    <button data-v="junsep" class="on">JUN / SEP<small>torres 10:30–19:30 · turno 10 baja 17:30</small></button>
+    <button data-v="julago">JUL / AGO<small>torres 10:30–20:30 · turno 10 baja 18:30</small></button>
+  </div>
+</div>
+
+<div class="step">
+  <h2>3 · ¿Hay patrón hoy?</h2>
+  <div class="seg" id="segPat">
+    <button data-v="1" class="on">SÍ<small>siempre en la central</small></button>
+    <button data-v="0">NO</button>
+  </div>
+  <div id="patHrow" style="margin-top:10px;">
+    <h2 style="font-size:13px;">¿Cuántas horas de torre hace?</h2>
+    <div class="seg" id="segPatH" style="flex-wrap:wrap;">
+      <button data-v="2">1h</button>
+      <button data-v="3">1,5h</button>
+      <button data-v="4">2h</button>
+      <button data-v="5">2,5h</button>
+      <button data-v="6" class="on">3h</button>
+      <button data-v="7">3,5h</button>
+      <button data-v="8">4h</button>
+    </div>
+  </div>
+  <div id="pat12row" style="margin-top:10px;">
+    <h2 style="font-size:13px;">¿Su primera torre a las 12:00?</h2>
+    <div class="seg" id="segPat12">
+      <button data-v="1" class="on">SÍ<small>sube a las 12, sea de 1h o 2h</small></button>
+      <button data-v="0">NO</button>
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <h2>¿Forzar solo 2 subidas por persona?</h2>
+  <div class="seg" id="segForz2">
+    <button data-v="1" class="on">SÍ<small>permite tandas de hasta 2,5h si tocan más de 4h</small></button>
+    <button data-v="0">NO<small>tope estricto de 2h por tanda</small></button>
+  </div>
+</div>
+
+<div class="step">
+  <h2>4 · Socorristas <span>— toca 10h/12h para cambiar el turno</span></h2>
+  <div id="people"></div>
+  <button class="add" onclick="addPerson()">+ Añadir socorrista</button>
+  <div class="hint">Los del turno de las 10 abren torres a las 10:30 y bajan media hora antes de salir; los de las 12 suben a las 12:30 y cierran. Si las horas no salen exactas, la media hora extra se la llevan los primeros de la lista — cambia el orden otro día para rotar.</div>
+</div>
+
+<div class="step" style="margin-bottom:10px;">
+  <h2>¿Mostrar nombres en el cuadrante?</h2>
+  <div class="seg" id="segNombres">
+    <button data-v="1" class="on">SÍ<small>cuadrante del día con nombres</small></button>
+    <button data-v="0">NO<small>genérico, solo letras</small></button>
+  </div>
+</div>
+<button class="go" onclick="generate()">Generar cuadrante</button>
+
+<div id="board">
+  <div class="boardHead"><b id="bTitle"></b><span id="bSub"></span></div>
+  <div class="taskstrip" id="taskTop"></div>
+  <div class="grid">
+    <div class="rail" id="rail"></div>
+    <div class="cols" id="cols"></div>
+  </div>
+  <div class="taskstrip" id="taskBot"></div>
+  <div class="totals">
+    <h3>Horas de torre</h3>
+    <div id="totals"></div>
+  </div>
+  <div id="warns"></div>
+  <div class="actions">
+    <button onclick="shareImage()" id="imgBtn">📷 Compartir imagen</button>
+    <button onclick="rehacer()">Rehacer</button>
+  </div>
+  <div style="text-align:center;margin-top:6px;">
+    <button onclick="sharePosta()" style="font-size:12px;padding:8px 14px;background:transparent;
+      border:1.5px solid var(--ocean);color:var(--ocean);border-radius:8px;font-weight:700;">
+      🧾 Cuadrante de posta (coordinador)</button>
+  </div>
+  <div class="note">Toca cualquier bloque del cuadrante para cambiar a mano quién lo cubre.</div>
+</div>
+
+</div>
+
+<div id="sheet" onclick="closeSheet(event)">
+  <div class="panel">
+    <h4 id="sheetTitle">Asignar bloque</h4>
+    <div id="sheetOpts"></div>
+  </div>
+</div>
+
+<div id="imgOverlay" onclick="if(event.target.id==='imgOverlay')this.style.display='none'"
+     style="display:none; position:fixed; inset:0; background:rgba(8,63,99,.96); z-index:50; overflow:auto; padding:14px; text-align:center;">
+  <div style="margin:2px 0 10px;">
+    <button id="copyImgBtn" onclick="copyImage()"
+      style="padding:12px 18px; border:0; background:#F4A81C; color:#15242E; font-weight:800; font-size:14px; border-radius:8px; margin:0 4px;">📋 Copiar imagen</button>
+    <button onclick="downloadImage()"
+      style="padding:12px 18px; border:2px solid #fff; background:transparent; color:#fff; font-weight:800; font-size:14px; border-radius:8px; margin:0 4px;">⬇ Descargar</button>
+  </div>
+  <div style="color:#DCEEF8; font-weight:600; font-size:12px; margin-bottom:10px;">
+    Copia la imagen y pégala en el chat de WhatsApp.<br>También puedes probar a mantenerla pulsada.
+  </div>
+  <img id="imgResult" style="width:100%; max-width:460px; border-radius:8px;" alt="Cuadrante">
+  <div style="margin:14px 0 30px;">
+    <button onclick="document.getElementById('imgOverlay').style.display='none'"
+      style="padding:12px 28px; border:2px solid #fff; background:transparent; color:#fff; font-weight:800; font-size:14px; border-radius:8px;">Cerrar</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+const PLANTILLA={"nombres":["Leo","Carla","Claudia","Heredia","Emilio","Sheila","Macian","Bayo","Guillem","Joseca","Santi","Nacho","Iago","Cebrian","I. Almenar","Martin","Novella","Lucas","Laia","Mara","Carles","Manuel","Cerezuela","Valentin","Mafre","Pau","Jorge","Pradas","I. Marin","Yoel","Manrique","Hugo","Mario","P. Ripoll","Codina","Mompo","Carolina","Micaela","Vega","Hugo M.","Vicente","Adrian"],"dias":{"7-1":[[0,"10","P"],[1,"10","A"],[2,"10","A"],[3,"12","A"],[4,"12","A"],[5,"12","A"],[10,"10","C"],[11,"10","C"],[12,"10","C"],[13,"12","C"],[14,"12","C"],[15,"12","C"],[20,"10","P"],[21,"10","P"],[23,"12","P"],[24,"12","P"],[25,"12","P"],[30,"10","C"],[31,"10","A"],[32,"10","A"],[33,"12","P"],[34,"12","C"],[35,"12","A"],[36,"12","P"],[41,"12","C"]],"7-2":[[1,"10","A"],[2,"10","A"],[3,"10","A"],[4,"12","A"],[5,"12","A"],[6,"12","A"],[11,"10","C"],[12,"10","C"],[13,"10","C"],[14,"12","C"],[15,"12","C"],[16,"12","C"],[21,"10","P"],[22,"10","P"],[23,"10","P"],[24,"12","P"],[25,"12","P"],[26,"12","P"],[31,"10","A"],[32,"10","A"],[33,"10","P"],[34,"12","C"],[35,"12","A"],[36,"12","P"],[37,"12","C"]],"7-3":[[2,"10","A"],[3,"10","A"],[4,"10","A"],[5,"12","A"],[6,"12","A"],[7,"12","A"],[12,"10","C"],[13,"10","C"],[14,"10","C"],[15,"12","C"],[16,"12","C"],[17,"12","C"],[22,"10","P"],[23,"10","P"],[24,"10","P"],[25,"12","P"],[26,"12","P"],[27,"12","P"],[32,"10","A"],[33,"10","P"],[34,"10","C"],[35,"12","A"],[36,"12","P"],[37,"12","C"],[38,"12","A"]],"7-4":[[3,"10","A"],[4,"10","A"],[5,"10","A"],[6,"12","A"],[7,"12","A"],[8,"12","A"],[13,"10","C"],[14,"10","C"],[15,"10","C"],[16,"12","C"],[17,"12","C"],[18,"12","C"],[23,"10","P"],[24,"10","P"],[25,"10","P"],[26,"12","P"],[27,"12","P"],[28,"12","P"],[33,"10","P"],[34,"10","C"],[35,"10","A"],[36,"10","P"],[37,"12","C"],[38,"12","A"],[39,"12","P"]],"7-5":[[4,"10","A"],[5,"10","A"],[6,"10","A"],[7,"12","A"],[8,"12","A"],[9,"12","A"],[14,"10","C"],[15,"10","C"],[16,"10","C"],[17,"12","C"],[18,"12","C"],[19,"12","C"],[24,"10","P"],[25,"10","P"],[26,"10","P"],[27,"12","P"],[28,"12","P"],[29,"12","P"],[34,"10","C"],[35,"10","A"],[36,"10","P"],[37,"10","C"],[38,"12","A"],[39,"12","P"],[40,"12","C"]],"7-6":[[5,"10","A"],[6,"10","A"],[7,"10","A"],[8,"12","A"],[9,"12","A"],[10,"12","A"],[15,"10","C"],[16,"10","C"],[17,"10","C"],[18,"12","C"],[19,"12","C"],[20,"12","C"],[25,"10","P"],[26,"10","P"],[27,"10","P"],[28,"12","P"],[29,"12","P"],[30,"12","P"],[35,"10","A"],[36,"10","P"],[37,"10","C"],[38,"10","A"],[39,"12","P"],[40,"12","C"],[41,"12","A"]],"7-7":[[0,"12","C"],[6,"10","A"],[7,"10","A"],[8,"10","A"],[9,"12","A"],[10,"12","A"],[11,"12","A"],[16,"10","C"],[17,"10","C"],[18,"10","C"],[19,"12","C"],[20,"12","C"],[21,"12","C"],[26,"10","P"],[27,"10","P"],[28,"10","P"],[29,"12","P"],[30,"12","P"],[31,"12","P"],[37,"10","C"],[38,"10","A"],[39,"10","P"],[40,"12","C"],[41,"12","A"]],"7-8":[[0,"12","C"],[1,"12","P"],[7,"10","A"],[8,"10","A"],[9,"10","A"],[10,"12","A"],[11,"12","A"],[12,"12","A"],[17,"10","C"],[18,"10","C"],[19,"10","C"],[20,"12","C"],[21,"12","C"],[22,"12","C"],[27,"10","P"],[28,"10","P"],[29,"10","P"],[30,"12","P"],[31,"12","P"],[32,"12","P"],[38,"10","A"],[39,"10","P"],[40,"10","C"],[41,"12","A"]],"7-9":[[0,"12","C"],[1,"12","P"],[2,"12","P"],[3,"12","P"],[8,"10","A"],[9,"10","A"],[10,"10","A"],[11,"12","A"],[12,"12","A"],[13,"12","A"],[18,"10","C"],[19,"10","C"],[20,"10","C"],[21,"12","C"],[22,"12","C"],[23,"12","C"],[28,"10","P"],[29,"10","P"],[30,"10","P"],[31,"12","P"],[32,"12","P"],[33,"12","P"],[39,"10","P"],[40,"10","C"],[41,"10","A"]],"7-10":[[0,"10","C"],[1,"12","P"],[2,"12","P"],[3,"12","P"],[4,"12","P"],[9,"10","A"],[10,"10","A"],[11,"10","A"],[12,"12","A"],[13,"12","A"],[14,"12","A"],[19,"10","C"],[20,"10","C"],[21,"10","C"],[22,"12","C"],[23,"12","C"],[24,"12","C"],[29,"10","P"],[30,"10","P"],[31,"10","P"],[32,"12","P"],[33,"12","P"],[34,"12","P"],[40,"10","C"],[41,"10","A"]],"7-11":[[0,"10","C"],[1,"10","P"],[2,"12","P"],[3,"12","P"],[4,"12","P"],[10,"10","A"],[11,"10","A"],[12,"10","A"],[13,"12","A"],[14,"12","A"],[15,"12","A"],[20,"10","C"],[21,"10","C"],[22,"10","C"],[23,"12","C"],[24,"12","C"],[25,"12","C"],[30,"10","P"],[31,"10","P"],[32,"10","P"],[33,"12","P"],[34,"12","P"],[35,"12","P"],[36,"12","C"],[41,"10","A"]],"7-12":[[0,"10","C"],[1,"10","P"],[2,"10","P"],[3,"12","P"],[4,"12","P"],[5,"12","P"],[11,"10","A"],[12,"10","A"],[13,"10","A"],[14,"12","A"],[15,"12","A"],[16,"12","A"],[21,"10","C"],[22,"10","C"],[23,"10","C"],[24,"12","C"],[25,"12","C"],[26,"12","C"],[31,"10","P"],[32,"10","P"],[33,"10","P"],[34,"12","P"],[35,"12","P"],[36,"12","C"],[37,"12","A"]],"7-13":[[1,"10","P"],[2,"10","P"],[3,"10","P"],[4,"12","P"],[5,"12","P"],[6,"12","P"],[12,"10","A"],[13,"10","A"],[14,"10","A"],[15,"12","A"],[16,"12","A"],[17,"12","A"],[22,"10","C"],[23,"10","C"],[24,"10","C"],[25,"12","C"],[26,"12","C"],[27,"12","C"],[32,"10","P"],[33,"10","P"],[34,"10","P"],[35,"12","P"],[36,"12","C"],[37,"12","A"],[38,"12","P"]],"7-14":[[2,"10","P"],[3,"10","P"],[4,"10","P"],[5,"12","P"],[6,"12","P"],[7,"12","P"],[13,"10","A"],[14,"10","A"],[15,"10","A"],[16,"12","A"],[17,"12","A"],[18,"12","A"],[23,"10","C"],[24,"10","C"],[25,"10","C"],[26,"12","C"],[27,"12","C"],[28,"12","C"],[33,"10","P"],[34,"10","P"],[35,"10","P"],[36,"10","C"],[37,"12","A"],[38,"12","P"],[39,"12","C"]],"7-15":[[3,"10","P"],[4,"10","P"],[5,"10","P"],[6,"12","P"],[7,"12","P"],[8,"12","P"],[14,"10","A"],[15,"10","A"],[16,"10","A"],[17,"12","A"],[18,"12","A"],[19,"12","A"],[24,"10","C"],[25,"10","C"],[26,"10","C"],[27,"12","C"],[28,"12","C"],[29,"12","C"],[34,"10","P"],[35,"10","P"],[36,"10","C"],[37,"10","A"],[38,"12","P"],[39,"12","C"],[40,"12","A"]],"7-16":[[4,"10","P"],[5,"10","P"],[6,"10","P"],[7,"12","P"],[8,"12","P"],[9,"12","P"],[15,"10","A"],[16,"10","A"],[17,"10","A"],[18,"12","A"],[19,"12","A"],[20,"12","A"],[25,"10","C"],[26,"10","C"],[27,"10","C"],[28,"12","C"],[29,"12","C"],[30,"12","C"],[35,"10","P"],[36,"10","C"],[37,"10","A"],[38,"10","P"],[39,"12","C"],[40,"12","A"],[41,"12","P"]],"7-17":[[0,"12","C"],[5,"10","P"],[6,"10","P"],[7,"10","P"],[8,"12","P"],[9,"12","P"],[10,"12","P"],[16,"10","A"],[17,"10","A"],[18,"10","A"],[19,"12","A"],[20,"12","A"],[21,"12","A"],[26,"10","C"],[27,"10","C"],[28,"10","C"],[29,"12","C"],[30,"12","C"],[31,"12","C"],[37,"10","A"],[38,"10","P"],[39,"10","C"],[40,"12","A"],[41,"12","P"]],"7-18":[[0,"12","C"],[1,"12","C"],[6,"10","P"],[7,"10","P"],[8,"10","P"],[9,"12","P"],[10,"12","P"],[11,"12","P"],[17,"10","A"],[18,"10","A"],[19,"10","A"],[20,"12","A"],[21,"12","A"],[22,"12","A"],[27,"10","C"],[28,"10","C"],[29,"10","C"],[30,"12","C"],[31,"12","C"],[32,"12","C"],[38,"10","P"],[39,"10","C"],[40,"10","A"],[41,"12","P"]],"7-19":[[0,"12","C"],[1,"12","C"],[2,"12","C"],[7,"10","P"],[8,"10","P"],[9,"10","P"],[10,"12","P"],[11,"12","P"],[12,"12","P"],[18,"10","A"],[19,"10","A"],[20,"10","A"],[21,"12","A"],[22,"12","A"],[23,"12","A"],[28,"10","C"],[29,"10","C"],[30,"10","C"],[31,"12","C"],[32,"12","C"],[33,"12","C"],[39,"10","C"],[40,"10","A"],[41,"12","P"]],"7-20":[[0,"10","C"],[1,"12","C"],[2,"12","C"],[3,"12","P"],[8,"10","P"],[9,"10","P"],[10,"10","P"],[11,"12","P"],[12,"12","P"],[13,"12","P"],[19,"10","A"],[20,"10","A"],[21,"10","A"],[22,"12","A"],[23,"12","A"],[24,"12","A"],[29,"10","C"],[30,"10","C"],[31,"10","C"],[32,"12","C"],[33,"12","C"],[34,"12","C"],[40,"10","A"],[41,"10","P"]],"7-21":[[0,"10","C"],[1,"10","C"],[2,"12","C"],[3,"12","P"],[4,"12","C"],[9,"10","P"],[10,"10","P"],[11,"10","P"],[12,"12","P"],[13,"12","P"],[14,"12","P"],[20,"10","A"],[21,"10","A"],[22,"10","A"],[23,"12","A"],[24,"12","A"],[25,"12","A"],[30,"10","C"],[31,"10","C"],[32,"10","C"],[33,"12","C"],[34,"12","C"],[35,"12","C"],[36,"12","A"],[41,"10","P"]],"7-22":[[0,"10","C"],[1,"10","C"],[2,"10","C"],[3,"12","P"],[4,"12","C"],[5,"12","C"],[10,"10","P"],[11,"10","P"],[12,"10","P"],[13,"12","P"],[14,"12","P"],[15,"12","P"],[21,"10","A"],[22,"10","A"],[23,"10","A"],[24,"12","A"],[25,"12","A"],[26,"12","A"],[31,"10","C"],[32,"10","C"],[33,"10","C"],[34,"12","C"],[35,"12","C"],[36,"12","A"],[37,"12","P"]],"7-23":[[1,"10","C"],[2,"10","C"],[3,"10","P"],[4,"12","C"],[5,"12","C"],[6,"12","C"],[11,"10","P"],[12,"10","P"],[13,"10","P"],[14,"12","P"],[15,"12","P"],[16,"12","P"],[22,"10","A"],[23,"10","A"],[24,"10","A"],[25,"12","A"],[26,"12","A"],[27,"12","A"],[32,"10","C"],[33,"10","C"],[34,"10","C"],[35,"12","C"],[36,"12","A"],[37,"12","P"],[38,"12","C"]],"7-24":[[2,"10","C"],[3,"10","P"],[4,"10","C"],[5,"12","C"],[6,"12","C"],[7,"12","C"],[12,"10","P"],[13,"10","P"],[14,"10","P"],[15,"12","P"],[16,"12","P"],[17,"12","P"],[23,"10","A"],[24,"10","A"],[25,"10","A"],[26,"12","A"],[27,"12","A"],[28,"12","A"],[33,"10","C"],[34,"10","C"],[35,"10","C"],[36,"10","A"],[37,"12","P"],[38,"12","C"],[39,"12","A"]],"7-25":[[3,"10","P"],[4,"10","C"],[5,"10","C"],[6,"12","C"],[7,"12","C"],[8,"12","C"],[13,"10","P"],[14,"10","P"],[15,"10","P"],[16,"12","P"],[17,"12","P"],[18,"12","P"],[24,"10","A"],[25,"10","A"],[26,"10","A"],[27,"12","A"],[28,"12","A"],[29,"12","A"],[34,"10","C"],[35,"10","C"],[36,"10","A"],[37,"10","P"],[38,"12","C"],[39,"12","A"],[40,"12","P"]],"7-26":[[4,"10","C"],[5,"10","C"],[6,"10","C"],[7,"12","C"],[8,"12","C"],[9,"12","C"],[14,"10","P"],[15,"10","P"],[16,"10","P"],[17,"12","P"],[18,"12","P"],[19,"12","P"],[25,"10","A"],[26,"10","A"],[27,"10","A"],[28,"12","A"],[29,"12","A"],[30,"12","A"],[35,"10","C"],[36,"10","A"],[37,"10","P"],[38,"10","C"],[39,"12","A"],[40,"12","P"],[41,"12","C"]],"7-27":[[0,"12","A"],[5,"10","C"],[6,"10","C"],[7,"10","C"],[8,"12","C"],[9,"12","C"],[10,"12","C"],[15,"10","P"],[16,"10","P"],[17,"10","P"],[18,"12","P"],[19,"12","P"],[20,"12","P"],[26,"10","A"],[27,"10","A"],[28,"10","A"],[29,"12","A"],[30,"12","A"],[31,"12","A"],[37,"10","P"],[38,"10","C"],[39,"10","A"],[40,"12","P"],[41,"12","C"]],"7-28":[[0,"12","A"],[1,"12","A"],[6,"10","C"],[7,"10","C"],[8,"10","C"],[9,"12","C"],[10,"12","C"],[11,"12","C"],[16,"10","P"],[17,"10","P"],[18,"10","P"],[19,"12","P"],[20,"12","P"],[21,"12","P"],[27,"10","A"],[28,"10","A"],[29,"10","A"],[30,"12","A"],[31,"12","A"],[32,"12","A"],[38,"10","C"],[39,"10","A"],[40,"10","P"],[41,"12","C"]],"7-29":[[0,"12","A"],[1,"12","A"],[2,"12","A"],[7,"10","C"],[8,"10","C"],[9,"10","C"],[10,"12","C"],[11,"12","C"],[12,"12","C"],[17,"10","P"],[18,"10","P"],[19,"10","P"],[20,"12","P"],[21,"12","P"],[22,"12","P"],[28,"10","P"],[29,"10","A"],[30,"10","A"],[31,"12","A"],[32,"12","A"],[33,"12","C"],[39,"10","C"],[40,"10","P"],[41,"10","C"]],"7-30":[[0,"10","A"],[1,"12","A"],[2,"12","A"],[3,"12","C"],[8,"10","C"],[9,"10","C"],[10,"10","C"],[11,"12","C"],[12,"12","C"],[13,"12","C"],[18,"10","P"],[19,"10","P"],[20,"10","P"],[21,"12","P"],[22,"12","P"],[23,"12","P"],[29,"10","A"],[30,"10","A"],[31,"10","A"],[32,"12","A"],[33,"12","C"],[34,"12","A"],[40,"10","P"],[41,"10","C"]],"7-31":[[0,"10","A"],[1,"10","A"],[2,"12","A"],[3,"12","C"],[4,"12","C"],[9,"10","C"],[10,"10","C"],[11,"10","C"],[12,"12","C"],[13,"12","C"],[14,"12","C"],[19,"10","P"],[20,"10","P"],[21,"10","P"],[22,"12","P"],[23,"12","P"],[24,"12","P"],[30,"10","A"],[31,"10","A"],[32,"10","A"],[33,"12","C"],[34,"12","A"],[35,"12","A"],[36,"12","P"],[41,"10","C"]],"8-1":[[0,"10","A"],[1,"10","A"],[2,"10","A"],[3,"12","C"],[4,"12","C"],[5,"12","A"],[10,"10","C"],[11,"10","C"],[12,"10","C"],[13,"12","C"],[14,"12","C"],[15,"12","C"],[20,"10","P"],[21,"10","P"],[22,"10","P"],[23,"12","P"],[24,"12","P"],[25,"12","P"],[31,"10","P"],[32,"10","A"],[33,"10","A"],[34,"12","A"],[35,"12","A"],[36,"12","P"],[37,"12","C"]],"8-2":[[1,"10","A"],[2,"10","A"],[3,"10","C"],[4,"12","C"],[5,"12","A"],[6,"12","A"],[11,"10","C"],[12,"10","C"],[13,"10","C"],[14,"12","C"],[15,"12","C"],[16,"12","C"],[21,"10","P"],[22,"10","P"],[23,"10","P"],[24,"12","P"],[25,"12","P"],[26,"12","P"],[32,"10","P"],[33,"10","A"],[34,"10","A"],[35,"12","A"],[36,"12","P"],[37,"12","C"],[38,"12","A"]],"8-3":[[2,"10","A"],[3,"10","C"],[4,"10","C"],[5,"12","A"],[6,"12","A"],[7,"12","A"],[12,"10","C"],[13,"10","C"],[14,"10","C"],[15,"12","C"],[16,"12","C"],[17,"12","C"],[22,"10","P"],[23,"10","P"],[24,"10","P"],[25,"12","P"],[26,"12","P"],[27,"12","P"],[33,"10","A"],[34,"10","A"],[35,"10","A"],[36,"10","P"],[37,"12","C"],[38,"12","A"],[39,"12","P"]],"8-4":[[3,"10","C"],[4,"10","C"],[5,"10","A"],[6,"12","A"],[7,"12","A"],[8,"12","A"],[13,"10","C"],[14,"10","C"],[15,"10","C"],[16,"12","C"],[17,"12","C"],[18,"12","C"],[23,"10","P"],[24,"10","P"],[25,"10","P"],[26,"12","P"],[27,"12","P"],[28,"12","P"],[34,"10","A"],[35,"10","A"],[36,"10","P"],[37,"10","C"],[38,"12","A"],[39,"12","P"],[40,"12","C"]],"8-5":[[4,"10","A"],[5,"10","A"],[6,"10","A"],[7,"12","A"],[8,"12","A"],[9,"12","A"],[14,"10","C"],[15,"10","C"],[16,"10","C"],[17,"12","C"],[18,"12","C"],[19,"12","C"],[24,"10","P"],[25,"10","P"],[26,"10","P"],[27,"12","P"],[28,"12","P"],[29,"12","P"],[35,"10","C"],[36,"10","P"],[37,"10","C"],[38,"10","A"],[39,"12","P"],[40,"12","C"],[41,"12","A"]],"8-6":[[0,"12","P"],[5,"10","A"],[6,"10","A"],[7,"10","A"],[8,"12","A"],[9,"12","A"],[10,"12","A"],[15,"10","C"],[16,"10","C"],[17,"10","C"],[18,"12","C"],[19,"12","C"],[20,"12","C"],[25,"10","P"],[26,"10","P"],[27,"10","P"],[28,"12","P"],[29,"12","P"],[30,"12","P"],[37,"10","C"],[38,"10","A"],[39,"10","P"],[40,"12","C"],[41,"12","A"]],"8-7":[[0,"12","P"],[1,"12","C"],[6,"10","A"],[7,"10","A"],[8,"10","A"],[9,"12","A"],[10,"12","A"],[11,"12","A"],[16,"10","C"],[17,"10","C"],[18,"10","C"],[19,"12","C"],[20,"12","C"],[21,"12","C"],[26,"10","P"],[27,"10","P"],[28,"10","P"],[29,"12","P"],[30,"12","P"],[31,"12","P"],[38,"10","A"],[39,"10","P"],[40,"10","C"],[41,"12","A"]],"8-8":[[0,"12","P"],[1,"12","P"],[2,"12","C"],[7,"10","A"],[8,"10","A"],[9,"10","A"],[10,"12","A"],[11,"12","A"],[12,"12","A"],[17,"10","C"],[18,"10","C"],[19,"10","C"],[20,"12","C"],[21,"12","C"],[22,"12","C"],[27,"10","P"],[28,"10","P"],[29,"10","P"],[30,"12","P"],[31,"12","P"],[32,"12","P"],[39,"10","P"],[40,"10","C"],[41,"10","A"]],"8-9":[[0,"10","P"],[1,"12","P"],[2,"12","P"],[3,"12","C"],[8,"10","A"],[9,"10","A"],[10,"10","A"],[11,"12","A"],[12,"12","A"],[13,"12","A"],[18,"10","C"],[19,"10","C"],[20,"10","C"],[21,"12","C"],[22,"12","C"],[23,"12","C"],[28,"10","A"],[29,"10","P"],[30,"10","P"],[31,"12","P"],[32,"12","P"],[33,"12","C"],[40,"10","C"],[41,"10","A"]],"8-10":[[0,"10","P"],[1,"10","P"],[2,"12","P"],[3,"12","P"],[4,"12","C"],[9,"10","A"],[10,"10","A"],[11,"10","A"],[12,"12","A"],[13,"12","A"],[14,"12","A"],[19,"10","C"],[20,"10","C"],[21,"10","C"],[22,"12","C"],[23,"12","C"],[24,"12","C"],[29,"10","A"],[30,"10","P"],[31,"10","P"],[32,"12","P"],[33,"12","P"],[34,"12","C"],[41,"10","C"]],"8-11":[[0,"10","P"],[1,"10","P"],[2,"10","P"],[3,"12","P"],[4,"12","P"],[5,"12","C"],[10,"10","A"],[11,"10","A"],[12,"10","A"],[13,"12","A"],[14,"12","A"],[15,"12","A"],[20,"10","C"],[21,"10","C"],[22,"10","C"],[23,"12","C"],[24,"12","C"],[25,"12","C"],[30,"10","A"],[31,"10","P"],[32,"10","P"],[33,"12","P"],[34,"12","P"],[35,"12","C"],[36,"12","C"]],"8-12":[[1,"10","P"],[2,"10","P"],[3,"10","P"],[4,"12","P"],[5,"12","P"],[6,"12","C"],[11,"10","A"],[12,"10","A"],[13,"10","A"],[14,"12","A"],[15,"12","A"],[16,"12","A"],[21,"10","C"],[22,"10","C"],[23,"10","C"],[24,"12","C"],[25,"12","C"],[26,"12","C"],[31,"10","A"],[32,"10","P"],[33,"10","P"],[34,"12","P"],[35,"12","P"],[36,"12","C"],[37,"12","A"]],"8-13":[[2,"10","P"],[3,"10","P"],[4,"10","P"],[5,"12","P"],[6,"12","P"],[7,"12","P"],[12,"10","A"],[13,"10","A"],[14,"10","A"],[15,"12","A"],[16,"12","A"],[17,"12","A"],[22,"10","C"],[23,"10","C"],[24,"10","C"],[25,"12","C"],[26,"12","C"],[27,"12","C"],[32,"10","P"],[33,"10","P"],[34,"10","P"],[35,"12","P"],[36,"12","C"],[37,"12","A"],[38,"12","C"]],"8-14":[[3,"10","P"],[4,"10","P"],[5,"10","P"],[6,"12","P"],[7,"12","P"],[8,"12","P"],[13,"10","A"],[14,"10","A"],[15,"10","A"],[16,"12","A"],[17,"12","A"],[18,"12","A"],[23,"10","C"],[24,"10","C"],[25,"10","C"],[26,"12","C"],[27,"12","C"],[28,"12","C"],[33,"10","P"],[34,"10","P"],[35,"10","P"],[36,"10","C"],[37,"12","A"],[38,"12","P"],[39,"12","C"]],"8-15":[[4,"10","P"],[5,"10","P"],[6,"10","P"],[7,"12","P"],[8,"12","P"],[9,"12","P"],[14,"10","A"],[15,"10","A"],[16,"10","A"],[17,"12","A"],[18,"12","A"],[19,"12","A"],[24,"10","C"],[25,"10","C"],[26,"10","C"],[27,"12","C"],[28,"12","C"],[29,"12","C"],[34,"10","P"],[35,"10","P"],[36,"10","C"],[37,"10","A"],[38,"12","P"],[39,"12","C"],[40,"12","A"]],"8-16":[[0,"12","C"],[5,"10","P"],[6,"10","P"],[7,"10","P"],[8,"12","P"],[9,"12","P"],[10,"12","P"],[15,"10","A"],[16,"10","A"],[17,"10","A"],[18,"12","A"],[19,"12","A"],[20,"12","A"],[25,"10","C"],[26,"10","C"],[27,"10","C"],[28,"12","C"],[29,"12","C"],[30,"12","C"],[35,"10","P"],[36,"10","C"],[37,"10","A"],[38,"10","P"],[39,"12","C"],[40,"12","A"],[41,"12","P"]],"8-17":[[0,"12","C"],[1,"12","C"],[6,"10","P"],[7,"10","P"],[8,"10","P"],[9,"12","P"],[10,"12","P"],[11,"12","P"],[16,"10","A"],[17,"10","A"],[18,"10","A"],[19,"12","A"],[20,"12","A"],[21,"12","A"],[26,"10","C"],[27,"10","C"],[28,"10","C"],[29,"12","C"],[30,"12","C"],[31,"12","C"],[37,"10","A"],[38,"10","P"],[39,"10","C"],[40,"12","A"],[41,"12","P"]],"8-18":[[0,"12","C"],[1,"12","C"],[2,"12","C"],[7,"10","P"],[8,"10","P"],[9,"10","P"],[10,"12","P"],[11,"12","P"],[12,"12","P"],[17,"10","A"],[18,"10","A"],[19,"10","A"],[20,"12","A"],[21,"12","A"],[22,"12","A"],[27,"10","C"],[28,"10","C"],[29,"10","C"],[30,"12","C"],[31,"12","C"],[32,"12","C"],[38,"10","P"],[39,"10","C"],[40,"10","A"],[41,"12","P"]],"8-19":[[0,"10","C"],[1,"12","C"],[2,"12","C"],[3,"12","C"],[8,"10","P"],[9,"10","P"],[10,"10","P"],[11,"12","P"],[12,"12","P"],[13,"12","P"],[18,"10","A"],[19,"10","A"],[20,"10","A"],[21,"12","A"],[22,"12","A"],[23,"12","A"],[28,"10","C"],[29,"10","C"],[30,"10","C"],[31,"12","C"],[32,"12","C"],[33,"12","P"],[39,"10","C"],[40,"10","A"],[41,"10","P"]],"8-20":[[0,"10","C"],[1,"10","C"],[2,"12","C"],[3,"12","C"],[4,"12","C"],[9,"10","P"],[10,"10","P"],[11,"10","P"],[12,"12","P"],[13,"12","P"],[14,"12","P"],[19,"10","A"],[20,"10","A"],[21,"10","A"],[22,"12","A"],[23,"12","A"],[24,"12","A"],[29,"10","C"],[30,"10","C"],[31,"10","C"],[32,"12","C"],[33,"12","P"],[34,"12","C"],[40,"10","A"],[41,"10","P"]],"8-21":[[0,"10","C"],[1,"10","C"],[2,"10","C"],[3,"12","C"],[4,"12","C"],[5,"12","C"],[10,"10","P"],[11,"10","P"],[12,"10","P"],[13,"12","P"],[14,"12","P"],[15,"12","P"],[20,"10","A"],[21,"10","A"],[22,"10","A"],[23,"12","A"],[24,"12","A"],[25,"12","A"],[30,"10","C"],[31,"10","C"],[32,"10","C"],[33,"12","P"],[34,"12","C"],[35,"12","C"],[36,"12","A"],[41,"10","P"]],"8-22":[[1,"10","C"],[2,"10","C"],[3,"10","C"],[4,"12","C"],[5,"12","C"],[6,"12","C"],[11,"10","P"],[12,"10","P"],[13,"10","P"],[14,"12","P"],[15,"12","P"],[16,"12","P"],[21,"10","A"],[22,"10","A"],[23,"10","A"],[24,"12","A"],[25,"12","A"],[26,"12","A"],[31,"10","C"],[32,"10","C"],[33,"10","P"],[34,"12","C"],[35,"12","C"],[36,"12","A"],[37,"12","P"]],"8-23":[[2,"10","C"],[3,"10","C"],[4,"10","C"],[5,"12","C"],[6,"12","C"],[7,"12","C"],[12,"10","P"],[13,"10","P"],[14,"10","P"],[15,"12","P"],[16,"12","P"],[17,"12","P"],[22,"10","A"],[23,"10","A"],[24,"10","A"],[25,"12","A"],[26,"12","A"],[27,"12","A"],[32,"10","C"],[33,"10","P"],[34,"10","C"],[35,"12","C"],[36,"12","A"],[37,"12","P"],[38,"12","C"]],"8-24":[[3,"10","C"],[4,"10","C"],[5,"10","C"],[6,"12","C"],[7,"12","C"],[8,"12","C"],[13,"10","P"],[14,"10","P"],[15,"10","P"],[16,"12","P"],[17,"12","P"],[18,"12","P"],[23,"10","A"],[24,"10","A"],[25,"10","A"],[26,"12","A"],[27,"12","A"],[28,"12","A"],[33,"10","P"],[34,"10","C"],[35,"10","C"],[36,"10","A"],[37,"12","P"],[38,"12","C"],[39,"12","A"]],"8-25":[[4,"10","C"],[5,"10","C"],[6,"10","C"],[7,"12","C"],[8,"12","C"],[9,"12","C"],[14,"10","P"],[15,"10","P"],[16,"10","P"],[17,"12","P"],[18,"12","P"],[19,"12","P"],[24,"10","A"],[25,"10","A"],[26,"10","A"],[27,"12","A"],[28,"12","A"],[29,"12","A"],[34,"10","C"],[35,"10","C"],[36,"10","A"],[37,"10","P"],[38,"12","C"],[39,"12","A"],[40,"12","P"]],"8-26":[[0,"12","A"],[5,"10","C"],[6,"10","C"],[7,"10","C"],[8,"12","C"],[9,"12","C"],[10,"12","C"],[15,"10","P"],[16,"10","P"],[17,"10","P"],[18,"12","P"],[19,"12","P"],[20,"12","P"],[25,"10","A"],[26,"10","A"],[27,"10","A"],[28,"12","A"],[29,"12","A"],[30,"12","A"],[35,"10","C"],[36,"10","A"],[37,"10","P"],[38,"10","C"],[39,"12","A"],[40,"12","P"],[41,"12","C"]],"8-27":[[0,"12","A"],[1,"12","A"],[6,"10","C"],[7,"10","C"],[8,"10","C"],[9,"12","C"],[10,"12","C"],[11,"12","C"],[16,"10","P"],[17,"10","P"],[18,"10","P"],[19,"12","P"],[20,"12","P"],[21,"12","P"],[26,"10","A"],[27,"10","A"],[28,"10","A"],[29,"12","A"],[30,"12","A"],[31,"12","A"],[37,"10","P"],[38,"10","C"],[39,"10","A"],[40,"12","P"],[41,"12","C"]],"8-28":[[0,"12","A"],[1,"12","A"],[2,"12","A"],[7,"10","C"],[8,"10","C"],[9,"10","C"],[10,"12","C"],[11,"12","C"],[12,"12","C"],[17,"10","P"],[18,"10","P"],[19,"10","P"],[20,"12","P"],[21,"12","P"],[22,"12","P"],[27,"10","A"],[28,"10","A"],[29,"10","A"],[30,"12","A"],[31,"12","A"],[32,"12","C"],[38,"10","C"],[39,"10","P"],[40,"10","P"],[41,"12","C"]],"8-29":[[0,"10","A"],[1,"12","A"],[2,"12","A"],[3,"12","C"],[8,"10","C"],[9,"10","C"],[10,"10","C"],[11,"12","C"],[12,"12","C"],[13,"12","C"],[18,"10","P"],[19,"10","P"],[20,"10","P"],[21,"12","P"],[22,"12","P"],[23,"12","P"],[28,"10","C"],[29,"10","A"],[30,"10","A"],[31,"12","A"],[32,"12","A"],[33,"12","A"],[39,"10","P"],[40,"10","P"],[41,"10","C"]],"8-30":[[0,"10","A"],[1,"10","A"],[2,"12","A"],[3,"12","A"],[4,"12","C"],[9,"10","C"],[10,"10","C"],[11,"10","C"],[12,"12","C"],[13,"12","C"],[14,"12","C"],[19,"10","P"],[20,"10","P"],[21,"10","P"],[22,"12","P"],[23,"12","P"],[24,"12","P"],[29,"10","A"],[30,"10","A"],[31,"10","A"],[32,"12","A"],[33,"12","A"],[34,"12","P"],[40,"10","P"],[41,"10","C"]],"8-31":[[0,"10","A"],[1,"10","A"],[2,"10","A"],[3,"12","A"],[4,"12","C"],[5,"12","C"],[10,"10","C"],[11,"10","C"],[12,"10","C"],[13,"12","C"],[14,"12","C"],[15,"12","C"],[20,"10","P"],[21,"10","P"],[22,"10","P"],[23,"12","P"],[24,"12","P"],[25,"12","P"],[30,"10","A"],[31,"10","A"],[32,"10","A"],[33,"12","A"],[34,"12","P"],[35,"12","P"]]},"coord":{"7-1":{"C":"Royo","P":"Helena","A":"Roberto"},"7-2":{"C":"Royo","P":"Helena","A":"Roberto"},"7-3":{"A":"Bayona","C":"Laura","P":"Peris"},"7-4":{"A":"Bayona","C":"Laura","P":"Peris"},"7-5":{"A":"Bayona","C":"Laura","P":"Peris"},"7-6":{"A":"Bayona","C":"Laura","P":"Peris"},"7-7":{"A":"Bayona","C":"Laura","P":"Peris"},"7-8":{"A":"Bayona","C":"Laura","P":"Peris"},"7-9":{"A":"Bayona","C":"Laura","P":"Peris"},"7-10":{"A":"Royo","C":"Helena","P":"Roberto"},"7-11":{"A":"Royo","C":"Helena","P":"Roberto"},"7-12":{"A":"Royo","C":"Helena","P":"Roberto"},"7-13":{"A":"Royo","C":"Helena","P":"Roberto"},"7-14":{"A":"Royo","C":"Helena","P":"Roberto"},"7-15":{"A":"Royo","C":"Helena","P":"Roberto"},"7-16":{"A":"Royo","C":"Helena","P":"Roberto"},"7-17":{"P":"Bayona","A":"Laura","C":"Peris"},"7-18":{"P":"Bayona","A":"Laura","C":"Peris"},"7-19":{"P":"Bayona","A":"Laura","C":"Peris"},"7-20":{"P":"Bayona","A":"Laura","C":"Peris"},"7-21":{"P":"Bayona","A":"Laura","C":"Peris"},"7-22":{"P":"Bayona","A":"Laura","C":"Peris"},"7-23":{"P":"Bayona","A":"Laura","C":"Peris"},"7-24":{"P":"Royo","A":"Helena","C":"Roberto"},"7-25":{"P":"Royo","A":"Helena","C":"Roberto"},"7-26":{"P":"Royo","A":"Helena","C":"Roberto"},"7-27":{"P":"Royo","A":"Helena","C":"Roberto"},"7-28":{"P":"Royo","A":"Helena","C":"Roberto"},"7-29":{"P":"Royo","A":"Helena","C":"Roberto"},"7-30":{"P":"Royo","A":"Helena","C":"Roberto"},"7-31":{"C":"Bayona","P":"Laura","A":"Peris"},"8-1":{"C":"Bayona","P":"Laura","A":"Peris"},"8-2":{"C":"Bayona","P":"Laura","A":"Peris"},"8-3":{"C":"Bayona","P":"Laura","A":"Peris"},"8-4":{"C":"Bayona","P":"Laura","A":"Peris"},"8-5":{"C":"Bayona","P":"Laura","A":"Peris"},"8-6":{"C":"Bayona","P":"Laura","A":"Peris"},"8-7":{"C":"Royo"},"8-8":{"C":"Royo"},"8-9":{"C":"Royo"},"8-10":{"C":"Royo"},"8-11":{"C":"Royo"},"8-12":{"C":"Royo"},"8-13":{"C":"Royo"},"8-14":{"A":"Bayona","C":"Laura","P":"Peris"},"8-15":{"A":"Bayona","C":"Laura","P":"Peris"},"8-16":{"A":"Bayona","C":"Laura","P":"Peris"},"8-17":{"A":"Bayona","C":"Laura","P":"Peris"},"8-18":{"A":"Bayona","C":"Laura","P":"Peris"},"8-19":{"A":"Bayona","C":"Laura","P":"Peris"},"8-20":{"A":"Bayona","C":"Laura","P":"Peris"},"8-21":{"A":"Royo"},"8-22":{"A":"Royo"},"8-23":{"A":"Royo"},"8-24":{"A":"Royo"},"8-25":{"A":"Royo"},"8-26":{"A":"Royo"},"8-27":{"A":"Royo"},"8-28":{"P":"Bayona","A":"Laura","C":"Peris"},"8-29":{"P":"Bayona","A":"Laura","C":"Peris"},"8-30":{"P":"Bayona","A":"Laura","C":"Peris"},"8-31":{"P":"Bayona","A":"Laura","C":"Peris"}},"pat":{"7-1":{"C":"Carretero","P":"Yuste","A":"Cedric"},"7-2":{"C":"Carretero","P":"Yuste","A":"Cedric"},"7-3":{"A":"Gustavo","C":"Raquel","P":"Tarazaga"},"7-4":{"A":"Gustavo","C":"Raquel","P":"Tarazaga"},"7-5":{"A":"Gustavo","C":"Raquel","P":"Tarazaga"},"7-6":{"A":"Gustavo","C":"Raquel","P":"Tarazaga"},"7-7":{"A":"Gustavo","C":"Raquel","P":"Tarazaga"},"7-8":{"A":"Gustavo","C":"Raquel","P":"Tarazaga"},"7-9":{"A":"Gustavo","C":"Raquel","P":"Tarazaga"},"7-10":{"A":"Carretero","C":"Yuste","P":"Cedric"},"7-11":{"A":"Carretero","C":"Yuste","P":"Cedric"},"7-12":{"A":"Carretero","C":"Yuste","P":"Cedric"},"7-13":{"A":"Carretero","C":"Yuste","P":"Cedric"},"7-14":{"A":"Carretero","C":"Yuste","P":"Cedric"},"7-15":{"A":"Carretero","C":"Yuste","P":"Cedric"},"7-16":{"A":"Carretero","C":"Yuste","P":"Cedric"},"7-17":{"P":"Gustavo","A":"Raquel","C":"Tarazaga"},"7-18":{"P":"Gustavo","A":"Raquel","C":"Tarazaga"},"7-19":{"P":"Gustavo","A":"Raquel","C":"Tarazaga"},"7-20":{"P":"Gustavo","A":"Raquel","C":"Tarazaga"},"7-21":{"P":"Gustavo","A":"Raquel","C":"Tarazaga"},"7-22":{"P":"Gustavo","A":"Raquel","C":"Tarazaga"},"7-23":{"P":"Gustavo","A":"Raquel","C":"Tarazaga"},"7-24":{"P":"Carretero","A":"Yuste","C":"Cedric"},"7-25":{"P":"Carretero","A":"Yuste","C":"Cedric"},"7-26":{"P":"Carretero","A":"Yuste","C":"Cedric"},"7-27":{"P":"Carretero","A":"Yuste","C":"Cedric"},"7-28":{"P":"Carretero","A":"Yuste","C":"Cedric"},"7-29":{"P":"Carretero","A":"Yuste","C":"Cedric"},"7-30":{"P":"Carretero","A":"Yuste","C":"Cedric"},"7-31":{"C":"Gustavo","P":"Raquel","A":"Tarazaga"},"8-1":{"C":"Gustavo","P":"Raquel","A":"Tarazaga"},"8-2":{"C":"Gustavo","P":"Raquel","A":"Tarazaga"},"8-3":{"C":"Gustavo","P":"Raquel","A":"Tarazaga"},"8-4":{"C":"Gustavo","P":"Raquel","A":"Tarazaga"},"8-5":{"C":"Gustavo","P":"Raquel","A":"Tarazaga"},"8-6":{"C":"Gustavo","P":"Raquel","A":"Tarazaga"},"8-7":{"C":"Carretero","P":"Yuste","A":"Cedric"},"8-8":{"C":"Carretero","P":"Yuste","A":"Cedric"},"8-9":{"C":"Carretero","P":"Yuste","A":"Cedric"},"8-10":{"C":"Carretero","P":"Yuste","A":"Cedric"},"8-11":{"C":"Carretero","P":"Yuste","A":"Cedric"},"8-12":{"C":"Carretero","P":"Yuste","A":"Cedric"},"8-13":{"C":"Carretero","P":"Yuste","A":"Cedric"},"8-14":{"A":"Gustavo","C":"Raquel","P":"Tarazaga"},"8-15":{"A":"Gustavo","C":"Raquel","P":"Tarazaga"},"8-16":{"A":"Gustavo","C":"Raquel","P":"Tarazaga"},"8-17":{"A":"Gustavo","C":"Raquel","P":"Tarazaga"},"8-18":{"A":"Gustavo","C":"Raquel","P":"Tarazaga"},"8-19":{"A":"Gustavo","C":"Raquel","P":"Tarazaga"},"8-20":{"A":"Gustavo","C":"Raquel","P":"Tarazaga"},"8-21":{"A":"Carretero","C":"Yuste","P":"Cedric"},"8-22":{"A":"Carretero","C":"Yuste","P":"Cedric"},"8-23":{"A":"Carretero","C":"Yuste","P":"Cedric"},"8-24":{"A":"Carretero","C":"Yuste","P":"Cedric"},"8-25":{"A":"Carretero","C":"Yuste","P":"Cedric"},"8-26":{"A":"Carretero","C":"Yuste","P":"Cedric"},"8-27":{"A":"Carretero","C":"Yuste","P":"Cedric"},"8-28":{"P":"Gustavo","A":"Raquel","C":"Tarazaga"},"8-29":{"P":"Gustavo","A":"Raquel","C":"Tarazaga"},"8-30":{"P":"Gustavo","A":"Raquel","C":"Tarazaga"},"8-31":{"P":"Gustavo","A":"Raquel","C":"Tarazaga"}}};
+
+/* ---------- estado ---------- */
+const PLAYAS=[["PUERTO",["T1","T2","T3"]],["ALMARDA",["T4","T5","T6"]],["CORINTO",["T7","T8","T9"]]];
+let playa=0, mes="junsep", hayPatron=true, patronA12=true, patCells=6, forz2=true, malvaOn=true, showNames=true, fechaSel=null, patronName=null;
+let people=[
+  {name:"",shift:"early"},{name:"",shift:"early"},{name:"",shift:"early"},
+  {name:"",shift:"late"},{name:"",shift:"late"},{name:"",shift:"late"}
+];
+const LETTERS="ABCDEFGHIJKLMN";
+let towers=null, S=0, lastGen=null;
+
+/* ---------- selectores ---------- */
+function segInit(id,cb){
+  const seg=document.getElementById(id);
+  seg.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    seg.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); cb(b.dataset.v);
+  });
+}
+segInit("segPlaya",v=>{ playa=+v;
+  document.getElementById("mvRow").style.display=(playa===2)?"":"none";
+  if(fechaSel) cargarPlantilla(); else saludoCoord(); });
+segInit("segMalva",v=>malvaOn=(v==="1"));
+segInit("segNombres",v=>{ showNames=(v==="1"); if(lastGen) renderBoard(); });
+const PLAYA_LETRA=["P","A","C"], MESES_ES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"], DIAS_ES=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+function fechaBonita(){
+  if(!fechaSel) return "";
+  const d=new Date(fechaSel+"T12:00:00");
+  return DIAS_ES[d.getDay()]+" "+d.getDate()+" de "+MESES_ES[d.getMonth()];
+}
+function fechaCambiada(){
+  fechaSel=document.getElementById("fecha").value||null;
+  if(!fechaSel) return;
+  const d=new Date(fechaSel+"T12:00:00");
+  const m=d.getMonth()+1;
+  /* mes de la app según la fecha */
+  const nuevoMes=(m>=7&&m<=8)?"julago":"junsep";
+  if(nuevoMes!==mes){
+    mes=nuevoMes;
+    document.querySelectorAll("#segMes button").forEach(b=>b.classList.toggle("on",b.dataset.v===mes));
+  }
+  cargarPlantilla();
+}
+function saludoCoord(){
+  const el=document.getElementById("saludo");
+  if(!fechaSel){ el.style.display="none"; patronName=null; return; }
+  const d=new Date(fechaSel+"T12:00:00");
+  const key=(d.getMonth()+1)+"-"+d.getDate();
+  const pp=(PLANTILLA.pat||{})[key];
+  patronName=pp? (pp[PLAYA_LETRA[playa]]||null) : null;
+  const cc=(PLANTILLA.coord||{})[key];
+  const co=cc? cc[PLAYA_LETRA[playa]] : null;
+  if(co){
+    const h=new Date().getHours();
+    const bd=(h<15)?"Bon dia":"Bona vesprada";
+    el.innerHTML="☀️ "+bd+", <b>"+co+"</b>! Hui coordines <b>"+PLAYAS[playa][0]+"</b> · "+fechaBonita();
+    el.style.display="block";
+  } else el.style.display="none";
+}
+function cargarPlantilla(){
+  saludoCoord();
+  const info=document.getElementById("fechaInfo");
+  if(!fechaSel){ info.textContent=""; return; }
+  const d=new Date(fechaSel+"T12:00:00");
+  const key=(d.getMonth()+1)+"-"+d.getDate();
+  const dia=PLANTILLA.dias[key];
+  if(!dia){ info.textContent="Sin plantilla oficial para esa fecha: pon la lista a mano."; return; }
+  const pl=PLAYA_LETRA[playa];
+  const míos=dia.filter(e=>e[2]===pl);
+  if(!míos.length){ info.textContent="La plantilla de ese día no tiene gente en esta playa."; return; }
+  people=míos.map(e=>({name:PLANTILLA.nombres[e[0]], shift:(e[1]==="10")?"early":"late"}));
+  renderPeople();
+  const nE=people.filter(p=>p.shift==="early").length, nL=people.length-nE;
+  info.textContent="Plantilla oficial cargada: "+nE+" a las 10 y "+nL+" a las 12"+(patronName?(" · patrón: "+patronName):"")+" ("+fechaBonita()+"). Edita lo que haga falta.";
+}
+function colName(tw){ return tw<3? PLAYAS[playa][1][tw] : "MALVA"; }
+segInit("segMes",v=>mes=v);
+segInit("segPat",v=>{ hayPatron=(v==="1");
+  document.getElementById("pat12row").style.display=hayPatron?"":"none";
+  document.getElementById("patHrow").style.display=hayPatron?"":"none"; });
+segInit("segPatH",v=>patCells=parseInt(v,10));
+segInit("segPat12",v=>patronA12=(v==="1"));
+segInit("segForz2",v=>forz2=(v==="1"));
+
+/* ---------- lista de personas ---------- */
+function renderPeople(){
+  const box=document.getElementById("people"); box.innerHTML="";
+  people.forEach((p,i)=>{
+    const row=document.createElement("div"); row.className="person";
+    const inp=document.createElement("input");
+    inp.placeholder="Socorrista "+LETTERS[i]; inp.value=p.name;
+    inp.oninput=()=>p.name=inp.value;
+    const sh=document.createElement("button");
+    sh.className="pill"+(p.shift==="early"?" on":"");
+    sh.textContent=p.shift==="early"?"10h":"12h";
+    sh.onclick=()=>{p.shift=p.shift==="early"?"late":"early"; renderPeople();};
+    const del=document.createElement("button"); del.className="del"; del.textContent="×";
+    del.onclick=()=>{people.splice(i,1); renderPeople();};
+    row.append(inp,sh,del); box.appendChild(row);
+  });
+}
+function addPerson(){ if(people.length<14){people.push({name:"",shift:"late"}); renderPeople();} }
+renderPeople();
+
+/* ---------- utilidades de tiempo ---------- */
+function slotTime(s){ const m=10.5*60+s*30; const h=Math.floor(m/60), mm=m%60;
+  return h+":"+(mm<10?"0":"")+mm; }
+function fmtH(slots){ const h=slots/2; return (h%1===0)? h+"h" : (Math.floor(h)+"h30"); }
+
+/* ---------- generador ---------- */
+function generate(){
+  S = (mes==="junsep")?18:20;
+  /* ventanas de torre reales:
+     - los de las 10 bajan de torre media hora antes de acabar (17:30 jun/sep, 18:30 jul/ago)
+     - los de las 12 suben a las 12:30 (media hora tras entrar)
+     - las torres cierran media hora antes del fin del servicio (ya reflejado en S) */
+  const earlyEnd=(mes==="junsep")?14:16, lateStart=4;
+  /* tope de tanda: 2h normal; 2,5h si se fuerzan solo 2 subidas por persona */
+  const MAXRUN=forz2?5:4;
+  /* nº de puestos: 3 torres; en Corinto con posta Malvarrosa abierta, 4 */
+  const NT=(playa===2 && malvaOn)?4:3;
+  /* pasadas: el descanso ideal entre tandas es 2h; solo se acorta si la cobertura lo exige */
+  const TIERS=[
+    {rest:4, quota:true , ideal:true }, /* 2h de descanso mínimo */
+    {rest:2, quota:true , ideal:false}, /* 1h si no queda otra */
+    {rest:1, quota:false, ideal:false}, /* 30 min, horas extra */
+    {rest:0, quota:false, ideal:false}  /* último recurso: pegado, sin pasar de 2h seguidas */
+  ];
+  const baseList=people.map((p,i)=>({
+    idx:i, name:p.name.trim()||("Socorrista "+LETTERS[i]),
+    letter:LETTERS[i], /* letra fija del abecedario, aunque haya nombre (evita iniciales repetidas) */
+    pat:false,
+    ws:p.shift==="early"?0:lateStart,
+    we:p.shift==="early"?earlyEnd:S
+  }));
+  if(baseList.length<3){ alert("Hacen falta al menos 3 socorristas."); return; }
+
+  function rng(seed){ return function(){ seed|=0; seed=seed+0x6D2B79F5|0;
+    let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296; }; }
+
+  function attempt(seed){
+    const rnd=rng(seed);
+    const list=baseList.map(p=>({...p, intervals:[], towersUsed:new Set(), assigned:0, mvCells:0}));
+    let patron=null;
+    if(hayPatron){
+      patron={idx:"P", name:"Patrón", letter:"P", pat:true, ws:0, we:S,
+        intervals:[], towersUsed:new Set(), assigned:0};
+      list.push(patron);
+    }
+    const tws=[]; for(let tw=0;tw<NT;tw++) tws.push(Array(S).fill(null));
+
+    /* patrón: primero cubre la central donde no hay 3 socorristas disponibles
+       (p. ej. solo 2 de un turno al abrir o cerrar) y completa hasta sus 3h */
+    let patronCells=0, patTarget=0;
+    if(patron){
+      const nEarly=list.filter(p=>!p.pat && p.ws===0).length;
+      const nLate=list.filter(p=>!p.pat && p.ws>0).length;
+      for(let t=0;t<S;t++){
+        const avail=(t<earlyEnd?nEarly:0)+(t>=lateStart?nLate:0);
+        if(avail<NT && tws[1][t]===null){ tws[1][t]="P"; patronCells++; }
+      }
+      /* pinzas junto a los anclajes, siempre en tramos de 1h (nunca 30 min sueltos) */
+      const runIfP=(t)=>{let n=1,k=t-1;while(k>=0&&tws[1][k]==="P"){n++;k--;}k=t+1;while(k<S&&tws[1][k]==="P"){n++;k++;}return n;};
+      const pinch=(t0)=>{
+        const c=[t0,t0+1];
+        if(c.some(t=>t<0||t>=S)) return;
+        if(c.every(t=>tws[1][t]===null)){
+          tws[1][c[0]]="P"; tws[1][c[1]]="P";
+          if(runIfP(c[0])>MAXRUN){ tws[1][c[0]]=null; tws[1][c[1]]=null; return; }
+          patronCells+=2;
+        } else {
+          /* si una celda ya es P, basta añadir la otra (se fusiona con su tramo) */
+          for(const t of c)
+            if(tws[1][t]===null && ((t>0&&tws[1][t-1]==="P")||(t+1<S&&tws[1][t+1]==="P")) && runIfP(t)<=MAXRUN){
+              tws[1][t]="P"; patronCells++;
+            }
+        }
+      };
+      const effStart=nLate+Math.max(0,nEarly-NT);
+      if(effStart<NT) pinch(patronA12?3:lateStart);
+      const effEnd=nEarly+Math.max(0,nLate-NT);
+      if(effEnd<NT) pinch(earlyEnd-2);
+      /* tandas separadas al menos 1h de cualquier otro tramo suyo */
+      const farFrom=(st,L)=>{
+        for(let k=Math.max(0,st-2);k<Math.min(S,st+L+2);k++)
+          if(k<st||k>=st+L){ if(tws[1][k]==="P") return false; }
+        return true;
+      };
+      const tryStint=(st,L)=>{
+        if(st<0||st+L>S) return false;
+        if(!tws[1].slice(st,st+L).every(x=>x===null)) return false;
+        if(!farFrom(st,L)) return false;
+        for(let k=st;k<st+L;k++) tws[1][k]="P";
+        patronCells+=L; return true;
+      };
+      const opts1=[lateStart,lateStart+1,lateStart+2,lateStart+3].sort(()=>rnd()-0.5),
+            opts2=[earlyEnd-5,earlyEnd-4,earlyEnd-3].sort(()=>rnd()-0.5);
+      /* horas elegidas para el patrón (la cobertura forzada puede superarlas) */
+      const target=Math.max(patCells, patronCells);
+      patTarget=target;
+      /* primera tanda: a las 12:00 si la costumbre está activa */
+      let primera=false;
+      const rem1=target-patronCells;
+      if(rem1>=2){
+        const L1=(rem1>=6)?4:((rem1===5)?3:Math.min(rem1,4));
+        if(patronA12 && tws[1][3]===null){
+          /* L1±1 como alternativas; superar lo elegido queda penalizado en la puntuación */
+          let Ls=[L1,L1-1,L1+1].filter(L=>L>=2&&L<=4&&(rem1-L)!==1);
+          if(Ls.length>1 && rnd()<0.35) Ls=[Ls[Ls.length-1]].concat(Ls.slice(0,-1));
+          for(const L of Ls){
+            if(tryStint(3,L)){ primera=true; break; }
+          }
+        }
+        if(!primera){
+          for(const st of opts1){ if(tryStint(st,L1)){ primera=true; break; } }
+        }
+      }
+      /* segunda tanda: hacia el final de la mañana */
+      const rem2=target-patronCells;
+      if(rem2>=2){
+        const L2=Math.min(rem2,4);
+        for(const st of opts2){ if(tryStint(st,L2)) break; }
+      }
+      patron.quota=patronCells; patron.assigned=patronCells; patron.remaining=0;
+      patron.towersUsed.add(1);
+      let t=0;
+      while(t<S){
+        if(tws[1][t]==="P"){ const a=t; while(t<S&&tws[1][t]==="P")t++; patron.intervals.push([a,t]); }
+        else t++;
+      }
+    }
+
+    /* cuota del resto */
+    const total=3*S-patronCells; /* solo vigilancia: la posta Malvarrosa no computa */
+    const rest=list.filter(p=>!p.pat);
+    const base=Math.floor(total/rest.length), extra=total-base*rest.length;
+    rest.forEach((p,i)=>{ p.quota=base+(i<extra?1:0); p.remaining=p.quota;
+      p.maxStint=Math.min(MAXRUN,Math.max(2,Math.ceil(p.quota/2))); });
+
+    /* sector T9 + Malvarrosa: bloques de 3h en pareja con intercambio a mitad
+       (1,5h en cada puesto). El relevo de la posta llega siempre desde T9,
+       que es la torre cercana; nadie cruza la playa. */
+    if(NT===4){
+      for(const [b0,b1] of [[0,6],[6,12],[S-6,S]]){
+        if(!tws[2].slice(b0,b1).every(x=>x===null)) continue;
+        if(!tws[3].slice(b0,b1).every(x=>x===null)) continue;
+        let el=rest.filter(p=>b0>=p.ws && b1<=p.we && p.remaining>=3 && p.remaining-3!==1
+                     && p.intervals.every(iv=>iv[1]+2<=b0 || iv[0]>=b1+2))
+                     .sort(()=>rnd()-0.5)
+                     .sort((x,y)=>x.intervals.length-y.intervals.length);
+        /* sin pareja estricta: aceptar a quien le sobraría media hora (se condona) */
+        if(el.length<2){
+          el=rest.filter(p=>b0>=p.ws && b1<=p.we && p.remaining>=3
+                     && p.intervals.every(iv=>iv[1]+2<=b0 || iv[0]>=b1+2))
+                     .sort(()=>rnd()-0.5)
+                     .sort((x,y)=>x.intervals.length-y.intervals.length);
+        }
+        if(el.length<2) continue;
+        const X=el[0], Y=el[1], mid=b0+3;
+        const flip=rnd()<0.5, tA=flip?3:2, tB=flip?2:3;
+        for(let k=b0;k<mid;k++){ tws[tA][k]=X.idx; tws[tB][k]=Y.idx; }
+        for(let k=mid;k<b1;k++){ tws[tB][k]=X.idx; tws[tA][k]=Y.idx; }
+        X.intervals.push([b0,mid,tA],[mid,b1,tB]);
+        Y.intervals.push([b0,mid,tB],[mid,b1,tA]);
+        for(const Z of [X,Y]){
+          Z.intervals.sort((a,c)=>a[0]-c[0]);
+          Z.remaining-=3; if(Z.remaining===1) Z.remaining=0; /* solo la mitad de T9 computa */
+          Z.assigned+=3; Z.mvCells+=3; Z.towersUsed.add(2); Z.towersUsed.add(3);
+        }
+        /* jul/ago: entre el 2º bloque (acaba 16:30) y el 3º (empieza 17:30) queda
+           1h de posta; la Malvarrosa es guardia, así que quien acaba allí se
+           queda esa hora más (la tanda de posta se alarga, como en la realidad) */
+        if(S===20 && b0===6){
+          const W=(tA===3)? Y : X;   /* el que hace la 2ª mitad en Malva */
+          if(tws[3][12]===null && tws[3][13]===null){
+            tws[3][12]=W.idx; tws[3][13]=W.idx;
+            const iv=W.intervals.find(v=>v[1]===12&&v[2]===3);
+            if(iv) iv[1]=14; else W.intervals.push([12,14,3]);
+            W.intervals.sort((a,c)=>a[0]-c[0]);
+            W.mvCells+=2; /* guardia: no computa como vigilancia */
+          }
+        }
+      }
+    }
+
+    /* anclar apertura y cierre con tandas completas de 2h, como en los
+       cuadrantes reales: los de las 10 abren y los de las 12 cierran */
+    function anchor(t0,t1,group){
+      const libres=[]; for(let tw=0;tw<NT;tw++) if(tws[tw].slice(t0,t1).every(x=>x===null)) libres.push(tw);
+      /* solo gente que pueda hacer el anclaje ENTERO y sin tramos que pisen la franja */
+      const pool=group.filter(p=>p.remaining>=(t1-t0) && !p.intervals.some(iv=>iv[0]<t1&&iv[1]>t0))
+                      .slice().sort(()=>rnd()-0.5);
+      for(const tw of libres){
+        const p=pool.shift(); if(!p) break;
+        let len=Math.min(t1-t0,p.remaining);
+        /* con 2 subidas forzadas y 5h restantes, anclaje de 2,5h para dejar 5+5 */
+        if(forz2 && p.remaining>=10) len=5;
+        if(p.remaining-len===1) len-=1;
+        let a=(t0===0)? 0 : t1-len;
+        /* si el tramo ampliado pisa una celda ocupada (p. ej. el patrón), recortar a 2h */
+        while(len>t1-t0 && !tws[tw].slice(a,a+len).every(x=>x===null)){
+          len--; a=(t0===0)? 0 : t1-len;
+        }
+        for(let k=a;k<a+len;k++) tws[tw][k]=p.idx;
+        p.intervals.push([a,a+len,tw]); p.intervals.sort((x,y)=>x[0]-y[0]);
+        p.remaining-=len; p.assigned+=len; p.towersUsed.add(tw);
+      }
+    }
+    anchor(0, lateStart, rest.filter(p=>p.ws===0));
+    anchor(earlyEnd, S, rest.filter(p=>p.ws>0));
+
+    const chainBefore=(p,t)=>{let n=0,x=t,m=true;while(m){m=false;for(const [a,b] of p.intervals){if(b===x){n+=b-a;x=a;m=true;break;}}}return n;};
+    const chainAfter=(p,t)=>{let n=0,x=t,m=true;while(m){m=false;for(const [a,b] of p.intervals){if(a===x){n+=b-a;x=b;m=true;break;}}}return n;};
+
+    const startTier=(seed%3===2)?1:0; /* algunos intentos empiezan más compactos para encajes exactos */
+    for(let ti=startTier;ti<TIERS.length;ti++){
+      const T=TIERS[ti];
+      let guard=0;
+      while(guard++<600){
+        let found=null;
+        /* huecos: primero torres lejanas (tandas completas), los restos cortos
+           caen así en la central o en la zona T9/Malva, que son las cómodas */
+        const TWORDER=(NT===4)?[0,1,2,3]:[0,2,1];
+        outer: for(let t=0;t<S;t++) for(const tw of TWORDER)
+          if(tws[tw][t]===null){ found=[t,tw]; break outer; }
+        if(!found) break;
+        const [t,tw]=found;
+        let run=0; while(t+run<S && tws[tw][t+run]===null) run++;
+
+        const cands=[];
+        const isMV=(NT===4 && tw===3); /* la posta se llena como guardia, sin cuota */
+        for(const p of list){
+          if(p.pat && !(ti>=2 && tw===1)) continue;
+          if(T.quota && !isMV && p.remaining<=0) continue;
+          if(t<p.ws || t>=p.we) continue;
+          const capTw=(NT===4 && tw===3)?6:MAXRUN; /* Malvarrosa es posta: hasta 3h */
+          let ok=true, maxLen=Math.min(run, p.we-t, capTw);
+          if(T.rest>0){
+            for(const [a,b] of p.intervals){
+              if(b<=t){ if(t < b+T.rest){ ok=false; break; } }      /* descanso tras la tanda anterior */
+              else if(a>=t+1){ maxLen=Math.min(maxLen, a-T.rest-t); } /* descanso antes de la siguiente */
+              else { ok=false; break; }                              /* solape */
+            }
+          } else {
+            /* pegado permitido solo en la misma torre (nada de saltar de torre
+               sin margen), sin solapar ni superar 2h continuas */
+            for(const [a,b,itw] of p.intervals){
+              if(t<b && t+1>a){ ok=false; break; }
+              if(b===t && itw!==tw){ ok=false; break; }
+              if(a>=t+1) maxLen=Math.min(maxLen, itw===tw ? a-t : a-1-t);
+            }
+            if(ok){
+              const tocaMV=(NT===4)&&(tw===3||p.intervals.some(iv=>iv[2]===3&&iv[1]===t));
+              const CAP=tocaMV?6:MAXRUN;
+              const before=chainBefore(p,t);
+              let L=Math.min(maxLen, CAP-before);
+              while(L>=1 && before+L+chainAfter(p,t+L)>CAP) L--;
+              maxLen=L;
+            }
+          }
+          if(!ok) continue;
+          let len=maxLen, full=true;
+          if(isMV){
+            /* guardia en la posta: tandas de 1h a 3h, cuanto más largas mejor */
+            len=Math.min(maxLen, 6);
+            if(T.rest>0 && len<2) continue;
+            full=true;
+          } else if(T.quota){
+            /* trocear la cuota en tandas de 1-2h, idealmente 2 al día:
+               8→4+4, 7→4+3, 6→4+2, 5→3+2; nunca dejar un resto de 30 min */
+            const nextStint=forz2
+              ? (rem)=>((rem===5||rem>=9)?5:(rem>=6?4:rem))
+              : (rem)=>rem>=6?4:(rem===5?3:rem);
+            const target=Math.min(nextStint(p.remaining), MAXRUN);
+            len=Math.min(len, target);
+            if(p.remaining-len===1) len-=1;
+            if(len<2) continue;                 /* tanda mínima: 1h */
+            full=(len===target);
+          } else {
+            len=Math.min(len, MAXRUN);
+            /* medias horas sueltas: solo en la ultimísima pasada, antes que dejar torre vacía */
+            if(T.rest>0 && len<2) continue;
+          }
+          if(len<1) continue;
+          cands.push({p,len,full});
+        }
+        if(!cands.length){ tws[tw][t]=(ti===TIERS.length-1)?"GAP":"SKIP"; continue; }
+        if(isMV){
+          /* guardia: al que menos carga total lleve (torre + posta) */
+          cands.sort((x,y)=>((x.p.assigned+x.p.mvCells)-(y.p.assigned+y.p.mvCells)));
+        } else if(T.quota){
+          cands.sort((x,y)=>
+            (x.p.intervals.length-y.p.intervals.length) ||
+            ((y.full?1:0)-(x.full?1:0)) ||
+            (x.p.we-y.p.we) ||
+            ((x.p.towersUsed.has(tw)?1:0)-(y.p.towersUsed.has(tw)?1:0)) ||
+            (y.p.remaining-x.p.remaining));
+        } else {
+          cands.sort((x,y)=>(x.p.assigned-y.p.assigned));
+        }
+        const pick=cands[Math.floor(rnd()*Math.min(cands.length, ti===0?2:3))];
+        const {p,len}=pick;
+        for(let k=t;k<t+len;k++) tws[tw][k]=p.idx;
+        p.intervals.push([t,t+len,tw]); p.intervals.sort((a,b)=>a[0]-b[0]);
+        p.towersUsed.add(tw);
+        if(isMV){ p.mvCells+=len; }               /* guardia: no computa */
+        else { p.remaining-=len; p.assigned+=len; }
+      }
+      if(ti<TIERS.length-1) for(let tw=0;tw<NT;tw++) for(let t=0;t<S;t++)
+        if(tws[tw][t]==="SKIP") tws[tw][t]=null;
+    }
+
+    /* puntuación: 1º cobertura, 2º sin tandas de 30 min, 3º pocas subidas
+       (ideal 2 por persona), 4º descanso mínimo largo, 5º reparto equilibrado */
+    let gaps=0;
+    for(let tw=0;tw<NT;tw++) for(let t=0;t<S;t++) if(tws[tw][t]==="GAP") gaps++;
+    let minRest=Infinity, extraStints=0, shortStints=0;
+    for(const p of list){
+      let prevEnd=null, run=0, chains=0;
+      for(let t=0;t<=S;t++){
+        const on=(t<S)&&tws.some(col=>col[t]===p.idx);
+        if(on){ if(run===0 && prevEnd!==null) minRest=Math.min(minRest, t-prevEnd); run++; }
+        else { if(run>0){ chains++; if(run<2) shortStints++; prevEnd=t; } run=0; }
+      }
+      if(!p.pat) extraStints+=Math.max(0,chains-2);
+    }
+    if(minRest===Infinity) minRest=99;
+    const hrs=rest.map(p=>p.assigned);
+    const spread=Math.max.apply(null,hrs)-Math.min.apply(null,hrs);
+    const pt=list.find(p=>p.pat);
+    const patExcess=pt? Math.max(0, pt.assigned-patTarget) : 0;
+    /* comodidad: las tandas de 1h solo junto a la posta (central) o en la zona
+       T9/Malva (30 m entre sí); y cuantos menos cruces de playa entre tandas, mejor */
+    const zoneOf=(tw)=>tw===3?2:tw;
+    let shortFar=0, travel=0;
+    for(const p of list){
+      if(p.pat) continue;
+      const chains=[]; let rn=0, zs=new Set(), mv=false;
+      for(let t=0;t<=S;t++){
+        let myTw=null;
+        for(let tw=0;tw<NT;tw++) if(t<S&&tws[tw][t]===p.idx) myTw=tw;
+        if(myTw!==null){ rn++; zs.add(zoneOf(myTw)); if(myTw===3) mv=true; }
+        else { if(rn>0) chains.push({len:rn, z:[...zs][0], mv}); rn=0; zs=new Set(); mv=false; }
+      }
+      for(let i=0;i<chains.length;i++){
+        const c=chains[i];
+        let comoda = c.z===1;
+        if(!comoda && NT===4 && c.z===2){
+          /* 1h en T9 sola: aceptada. Una tanda corta en Malva solo vale si
+             después sigues en la zona (subes a T9) o si es tu última tanda
+             del día (viaje de ida sin retorno), como en sus cuadrantes reales */
+          comoda = !c.mv
+            || (i+1<chains.length&&chains[i+1].z===2)
+            || (i===chains.length-1);
+        }
+        if(c.len<=2 && !comoda) shortFar++;
+        if(i>0) travel+=Math.abs(chains[i-1].z-c.z);
+      }
+    }
+    return {tws,list,gaps,shortStints,extraStints,minRest,spread,patExcess,shortFar,travel};
+  }
+
+  /* muchos intentos con barajados distintos; nos quedamos con el mejor:
+     1º cobertura, 2º sin tandas de 30 min, 3º nadie descansa menos de 1h,
+     4º horas equilibradas (±30 min), 5º pocas subidas, 6º descansos largos */
+  const scoreOf=forz2
+    ? r=>[r.gaps, r.shortStints, (r.minRest<2?1:0), r.patExcess, r.extraStints, Math.max(0,r.spread-1), r.shortFar, r.travel, -r.minRest, r.spread]
+    : r=>[r.gaps, r.shortStints, (r.minRest<2?1:0), r.patExcess, Math.max(0,r.spread-1), r.extraStints, r.shortFar, r.travel, -r.minRest, r.spread];
+  const better=(a,b)=>{ const A=scoreOf(a),B=scoreOf(b);
+    for(let i=0;i<A.length;i++){ if(A[i]!==B[i]) return A[i]<B[i]; } return false; };
+  let best=null;
+  for(let seed=1;seed<=1500;seed++){
+    const r=attempt(seed+seedOffset);
+    if(!best || better(r,best)) best=r;
+    if(best.gaps===0 && best.shortStints===0 && best.patExcess===0 && best.extraStints===0 && best.shortFar===0 && best.minRest>=4 && best.spread<=1) break;
+    if(seed>=400 && best.gaps===0 && best.shortStints===0 && best.patExcess===0 && best.extraStints===0 && best.shortFar===0) break;
+  }
+  towers=best.tws;
+  const byIdx={}; best.list.forEach(p=>byIdx[p.idx]=p);
+  lastGen={list:best.list,byIdx};
+  renderBoard();
+}
+
+/* ---------- render ---------- */
+function blocksOf(tw){
+  const out=[]; let t=0;
+  while(t<S){
+    const v=towers[tw][t]; let len=1;
+    while(t+len<S && towers[tw][t+len]===v) len++;
+    out.push({t,len,v}); t+=len;
+  }
+  return out;
+}
+function postaTasks(list,byIdx){
+  /* quién está en la posta central en cada franja clave; en Corinto con Malva,
+     estar en la posta Malvarrosa no cuenta como estar en la central */
+  const NTB=towers.length;
+  const eEnd=(mes==="junsep")?14:16;
+  const busy=(p,t)=>{ for(let tw=0;tw<NTB;tw++) if(towers[tw][t]===p.idx) return true; return false; };
+  const socs=list.filter(p=>!p.pat);
+  /* apertura: SIEMPRE alguien de las 10 (entra a primera hora). Primero quien
+     esté libre; si todos abren torre, el de la central; si no, cualquiera en torre */
+  const esSoc=v=>v!==null&&v!=="GAP"&&v!=="P";
+  let ap=socs.filter(p=>p.ws===0 && !busy(p,0));
+  if(!ap.length && esSoc(towers[1][0]) && byIdx[towers[1][0]].ws===0) ap=[byIdx[towers[1][0]]];
+  if(!ap.length) for(let tw=0;tw<NTB&&!ap.length;tw++){
+    const v=towers[tw][0]; if(esSoc(v)&&byIdx[v].ws===0) ap=[byIdx[v]];
+  }
+  ap=ap.filter(p=>p.ws===0);
+  /* cierre: SIEMPRE alguien de las 12 (sale a las 9 y cierra la playa). Primero
+     quien esté libre en la última franja; si no, el de la central al bajar; si no,
+     cualquier torre — pero jamás alguien del turno de las 10 */
+  let ci=socs.filter(p=>p.ws>0 && !busy(p,S-1));
+  if(!ci.length && esSoc(towers[1][S-1]) && byIdx[towers[1][S-1]].ws>0) ci=[byIdx[towers[1][S-1]]];
+  if(!ci.length) for(let tw=0;tw<NTB&&!ci.length;tw++){
+    const v=towers[tw][S-1]; if(esSoc(v)&&byIdx[v].ws>0) ci=[byIdx[v]];
+  }
+  ci=ci.filter(p=>p.ws>0);
+  /* orden y limpieza: quien más tiempo seguido pasa en la posta a lo largo del día */
+  let best=[], bestLen=0;
+  for(const p of socs){
+    const a=(p.ws===0)?0:4, b=(p.ws===0)?eEnd:S;
+    let run=0,mx=0;
+    for(let t=a;t<b;t++){ if(!busy(p,t)) run++; else run=0; mx=Math.max(mx,run); }
+    if(mx>bestLen){ bestLen=mx; best=[p]; }
+    else if(mx===bestLen && mx>0) best.push(p);
+  }
+  if(best.length>2) best=best.slice(0,2);
+  return {ap, orden:best, ci};
+}
+function taskName(p){ return p.letter+((showNames&&p.name)?(" "+p.name):""); }
+
+function renderBoard(){
+  const {byIdx,list}=lastGen;
+  const slotH=32;
+  document.getElementById("board").style.display="block";
+  document.getElementById("bTitle").textContent=PLAYAS[playa][0];
+  document.getElementById("bSub").textContent=
+    (fechaSel? fechaBonita()+" · " : (mes==="junsep"?"jun/sep · ":"jul/ago · "))+slotTime(0)+"–"+slotTime(S);
+
+  const rail=document.getElementById("rail");
+  rail.innerHTML=""; rail.style.height=(S*slotH+30)+"px";
+  for(let t=0;t<=S;t+=2){
+    const d=document.createElement("div");
+    d.style.top=(30+t*slotH)+"px"; d.textContent=slotTime(t);
+    rail.appendChild(d);
+  }
+
+  const cols=document.getElementById("cols"); cols.innerHTML="";
+  for(let tw=0;tw<towers.length;tw++){
+    const col=document.createElement("div"); col.className="col";
+    const h=document.createElement("div"); h.className="colHead";
+    h.textContent=colName(tw); col.appendChild(h);
+    const body=document.createElement("div"); body.className="colBody";
+    body.style.height=(S*slotH)+"px";
+    for(let t=2;t<S;t+=2){
+      const l=document.createElement("div"); l.className="hrline"; l.style.top=(t*slotH)+"px";
+      body.appendChild(l);
+    }
+    blocksOf(tw).forEach((b,bi)=>{
+      const d=document.createElement("div");
+      d.style.top=(b.t*slotH)+"px"; d.style.height=(b.len*slotH)+"px";
+      if(b.v==="GAP"){
+        d.className="blk gap";
+        d.innerHTML='<div class="L">SIN CUBRIR</div>';
+      }else{
+        const p=byIdx[b.v];
+        d.className="blk "+(p.pat?"pat":(bi%2? "b":"a"));
+        d.innerHTML='<div class="L">'+p.letter+'</div>'+
+          ((!showNames)?'':(p.pat?(patronName?'<div class="n">'+patronName+'</div>':''):'<div class="n">'+p.name+'</div>'))+
+          '<div class="t">'+slotTime(b.t)+"–"+slotTime(b.t+b.len)+'</div>';
+      }
+      d.onclick=()=>openSheet(tw,b.t,b.len);
+      body.appendChild(d);
+    });
+    col.appendChild(body); cols.appendChild(col);
+  }
+
+  /* tareas de posta (la de apertura solo si hay patrón: sin él no hay embarcación) */
+  const TK=postaTasks(list,byIdx);
+  const topEl=document.getElementById("taskTop");
+  if(hayPatron){
+    topEl.style.display="";
+    topEl.innerHTML =
+      "☀️ <b>Apertura</b> · saca la embarcación y monta la posta: <b>"+
+      (TK.ap.length? TK.ap.map(taskName).join(", ") : "todos antes de subir")+"</b>";
+  } else {
+    topEl.style.display="none";
+  }
+  document.getElementById("taskBot").innerHTML =
+    "🧹 <b>Orden y limpieza</b> · el que más tiempo está en posta: <b>"+
+    (TK.orden.length? TK.orden.map(taskName).join(", ") : "quien esté en posta")+"</b><br>"+
+    "🌙 <b>Cierre</b> · recoge y deja limpia la posta: <b>"+
+    (TK.ci.length? TK.ci.map(taskName).join(", ") : "los últimos al bajar")+"</b>";
+
+  /* totales: la posta Malvarrosa es guardia y no computa como vigilancia */
+  const counts={}, mvCounts={}; let gaps=[];
+  for(let tw=0;tw<towers.length;tw++) for(let t=0;t<S;t++){
+    const v=towers[tw][t];
+    if(v==="GAP") gaps.push([tw,t]);
+    else if(v!==null){
+      if(tw===3) mvCounts[v]=(mvCounts[v]||0)+1;
+      else counts[v]=(counts[v]||0)+1;
+    }
+  }
+  const tot=document.getElementById("totals"); tot.innerHTML="";
+  list.forEach(p=>{
+    const c=counts[p.idx]||0, mvc=mvCounts[p.idx]||0;
+    const row=document.createElement("div"); row.className="trow";
+    const diff=(c!==p.quota)? ' <span style="color:var(--muted)">(previsto '+fmtH(p.quota)+')</span>':"";
+    const mv=mvc? ' <span style="color:var(--muted)">+ '+fmtH(mvc)+' posta</span>':"";
+    const tags=[];
+    if(hayPatron && TK.ap.includes(p)) tags.push("☀️ apertura");
+    if(TK.orden.includes(p)) tags.push("🧹 orden");
+    if(TK.ci.includes(p)) tags.push("🌙 cierre");
+    const tg=tags.length? ' <span style="color:var(--muted)">· '+tags.join(" · ")+'</span>':"";
+    const label=p.pat? ("P · "+((showNames&&patronName)?patronName:"Patrón")) : (p.letter+(showNames&&p.name?(" · "+p.name):""));
+    row.innerHTML="<span>"+label+tg+"</span><b>"+fmtH(c)+diff+mv+"</b>";
+    tot.appendChild(row);
+  });
+
+  /* avisos */
+  const w=document.getElementById("warns"); w.innerHTML="";
+  const msgs=[];
+  if(gaps.length){
+    const ranges={};
+    gaps.forEach(([tw,t])=>{ (ranges[tw]=ranges[tw]||[]).push(t); });
+    for(const tw in ranges){
+      const ts=ranges[tw];
+      msgs.push(colName(tw)+" sin cubrir de "+slotTime(ts[0])+" a "+slotTime(ts[ts.length-1]+1)+".");
+    }
+    msgs.push("O falta gente de ese turno en esa franja, o el encaje no sale con todas las reglas (mín. 1h, máx. 2h, descansos). Arréglalo tocando los bloques: por ejemplo, pon al patrón en la central en esa franja y pasa a ese socorrista a la torre libre.");
+  }
+  /* con Malvarrosa abierta y poca gente, la carga por cabeza se dispara */
+  if(towers.length===4){
+    let pCells=0;
+    for(let t=0;t<S;t++) if(towers[1][t]==="P") pCells++;
+    const nSoc=list.filter(p=>!p.pat).length;
+    const carga=(towers.length*S-pCells)/nSoc;
+    if(carga>10) msgs.push("⚠ Con Malvarrosa abierta salís a "+fmtH(Math.round(carga))+" de puesto por cabeza. Valora cerrarla hoy o pedir refuerzo.");
+  }
+  /* solapes tras edición manual */
+  list.forEach(p=>{
+    for(let t=0;t<S;t++){
+      let n=0;
+      for(let tw=0;tw<towers.length;tw++) if(towers[tw][t]===p.idx) n++;
+      if(n>1){ msgs.push("⚠ "+p.name+" está en dos torres a la vez a las "+slotTime(t)+"."); break; }
+    }
+  });
+  /* más de 2h seguidas tras edición manual */
+  list.forEach(p=>{
+    let run=0; const chainCols=new Set();
+    for(let t=0;t<=S;t++){
+      let myTw=null; for(let tw=0;tw<towers.length;tw++) if(towers[tw][t]===p.idx) myTw=tw;
+      if(myTw!==null) chainCols.add(myTw);
+      const on=(t<S)&&towers.some(col=>col[t]===p.idx);
+      if(on) run++;
+      else{
+        const enMV = chainCols.has(3);
+        const lim = enMV? 8 : (forz2?5:4);
+        if(run>lim){ msgs.push("⚠ "+p.name+" hace más de "+(enMV?"4h en la zona de Malvarrosa":(forz2?"2,5h":"2h"))+" seguidas."); break; }
+        run=0; chainCols.clear(); }
+    }
+  });
+  /* descansos demasiado cortos entre tandas */
+  list.forEach(p=>{
+    let prevEnd=null, run=0;
+    for(let t=0;t<=S;t++){
+      const on=(t<S)&&towers.some(col=>col[t]===p.idx);
+      if(on){
+        if(run===0 && prevEnd!==null && t-prevEnd<2){
+          msgs.push("⚠ "+p.name+" vuelve a la torre a las "+slotTime(t)+" con menos de 1h de descanso.");
+          prevEnd=null;
+        }
+        run++;
+      } else { if(run>0) prevEnd=t; run=0; }
+    }
+  });
+  /* trabajar fuera de la ventana del turno tras edición manual */
+  {
+    const eEnd=(mes==="junsep")?14:16;
+    list.forEach(p=>{
+      if(p.pat) return;
+      for(let t=0;t<S;t++){
+        let on=false;
+        for(let tw=0;tw<towers.length;tw++) if(towers[tw][t]===p.idx) on=true;
+        if(!on) continue;
+        if(p.ws===0 && t>=eEnd){ msgs.push("⚠ "+p.name+" es del turno de las 10 y está asignado a las "+slotTime(t)+", cuando ya no está de servicio."); break; }
+        if(p.ws>0 && t<4){ msgs.push("⚠ "+p.name+" es del turno de las 12 y está asignado a las "+slotTime(t)+", antes de su entrada."); break; }
+      }
+    });
+  }
+  /* tandas de menos de 1h tras edición manual */
+  list.forEach(p=>{
+    let run=0, start=0;
+    for(let t=0;t<=S;t++){
+      const on=(t<S)&&towers.some(col=>col[t]===p.idx);
+      if(on){ if(run===0) start=t; run++; }
+      else { if(run===1) msgs.push("⚠ "+p.name+" tiene una tanda de solo 30 min a las "+slotTime(start)+"."); run=0; }
+    }
+  });
+  /* cambio de torre sin margen tras edición manual */
+  list.forEach(p=>{
+    let prevTw=null;
+    for(let t=0;t<S;t++){
+      let myTw=null;
+      for(let tw=0;tw<towers.length;tw++) if(towers[tw][t]===p.idx) myTw=tw;
+      const sector=(a,b)=>(a===2&&b===3)||(a===3&&b===2);
+      if(myTw!==null && prevTw!==null && myTw!==prevTw && !sector(prevTw,myTw)){
+        msgs.push("⚠ "+p.name+" cambia de torre a las "+slotTime(t)+" sin margen para desplazarse.");
+        break;
+      }
+      prevTw=myTw;
+    }
+  });
+  if(msgs.length){
+    const d=document.createElement("div"); d.className="warn";
+    d.innerHTML="<b>Avisos</b>"+msgs.map(m=>"<div>· "+m+"</div>").join("");
+    w.appendChild(d);
+  }
+}
+
+/* ---------- edición manual ---------- */
+let editing=null;
+function openSheet(tw,t,len){
+  editing={tw,t,len};
+  const owner=towers[tw][t];
+  document.getElementById("sheetTitle").textContent=
+    colName(tw)+" · "+slotTime(t)+"–"+slotTime(t+len);
+  const box=document.getElementById("sheetOpts"); box.innerHTML="";
+
+  /* modo 1 (el más usado): intercambiar TODO el día entre dos socorristas */
+  if(owner!==null && owner!=="GAP" && owner!=="P"){
+    const me=lastGen.byIdx[owner];
+    const h2=document.createElement("div");
+    h2.style.cssText="font-weight:800;font-size:12px;color:var(--muted);margin:10px 0 4px;";
+    h2.textContent="INTERCAMBIAR TODO EL DÍA DE "+(me.name||me.letter).toUpperCase()+" CON…";
+    box.appendChild(h2);
+    lastGen.list.forEach(p=>{
+      if(p.pat || p.idx===owner) return;
+      const b=document.createElement("button");
+      const turno=(p.ws===0)?"10h":"12h";
+      b.textContent="⇄ "+p.letter+" · "+p.name+"  ("+turno+")"+
+        ((p.ws===me.ws)?"":" ⚠ otro turno");
+      b.onclick=()=>{ swapAll(owner, p.idx); };
+      box.appendChild(b);
+    });
+  }
+
+  /* modo 2: cambiar solo este bloque */
+  const h1=document.createElement("div");
+  h1.style.cssText="font-weight:800;font-size:12px;color:var(--muted);margin:4px 0;";
+  h1.textContent="CAMBIAR SOLO ESTE BLOQUE";
+  box.appendChild(h1);
+  lastGen.list.forEach(p=>{
+    const b=document.createElement("button");
+    b.textContent=p.pat? "P · Patrón" : p.letter+" · "+p.name;
+    b.onclick=()=>{ assign(p.idx); };
+    box.appendChild(b);
+  });
+  const empty=document.createElement("button");
+  empty.textContent="Dejar sin cubrir";
+  empty.onclick=()=>assign("GAP");
+  box.appendChild(empty);
+
+  const c=document.createElement("button"); c.className="cancel"; c.textContent="Cancelar";
+  c.onclick=()=>document.getElementById("sheet").style.display="none";
+  box.appendChild(c);
+  document.getElementById("sheet").style.display="block";
+}
+function assign(v){
+  const {tw,t,len}=editing;
+  for(let k=t;k<t+len;k++) towers[tw][k]=v;
+  document.getElementById("sheet").style.display="none";
+  renderBoard();
+}
+function swapAll(a,b){
+  /* intercambia todos los bloques del día entre dos socorristas */
+  for(let tw=0;tw<towers.length;tw++)
+    for(let t=0;t<S;t++){
+      if(towers[tw][t]===a) towers[tw][t]=b;
+      else if(towers[tw][t]===b) towers[tw][t]=a;
+    }
+  document.getElementById("sheet").style.display="none";
+  renderBoard();
+}
+function closeSheet(e){ if(e.target.id==="sheet") e.target.style.display="none"; }
+
+/* ---------- exportar imagen ---------- */
+function shareImage(){
+  const {byIdx,list}=lastGen;
+  const nE=list.filter(p=>!p.pat&&p.ws===0).length;
+  const nL=list.filter(p=>!p.pat&&p.ws>0).length;
+  const nSoc=nE+nL;
+
+  const sc=2;                       /* nitidez x2 */
+  const NTB=towers.length;
+  const TK=postaTasks(list,byIdx);
+  const railW=52, colW=(NTB===4)?92:118, gap=8, pad=16;
+  const slotH=30, headH=96, colHead=30, taskH=hayPatron?24:0, botH=44;
+  const totRows=Math.ceil(list.length/2);
+  const totH=34+totRows*24+10;
+  const W=pad*2+railW+colW*NTB+gap*(NTB-1);
+  const H=headH+taskH+colHead+S*slotH+botH+totH+pad;
+
+  const cv=document.createElement("canvas");
+  cv.width=W*sc; cv.height=H*sc;
+  const ctx=cv.getContext("2d"); ctx.scale(sc,sc);
+
+  /* fondo arena y cabecera azul */
+  ctx.fillStyle="#F8F1E3"; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="#0B5E93"; ctx.fillRect(0,0,W,headH-10);
+  ctx.fillStyle="#F4A81C"; ctx.fillRect(0,headH-10,W,5);
+  ctx.fillStyle="#fff"; ctx.font="800 22px system-ui,sans-serif";
+  ctx.fillText("CUADRANTE · "+PLAYAS[playa][0], pad, 32);
+  ctx.font="600 13px system-ui,sans-serif"; ctx.fillStyle="#DCEEF8";
+  ctx.fillText("Cuadrante de "+nSoc+" · "+nE+" a las 10 · "+nL+" a las 12 · "+(hayPatron?"con patrón":"sin patrón"), pad, 54);
+  ctx.fillText((fechaSel? fechaBonita() : (mes==="junsep"?"jun/sep":"jul/ago"))+" · torres "+slotTime(0)+"–"+slotTime(S), pad, 72);
+
+  /* banda de apertura (solo si hay patrón: sin él no hay embarcación que sacar) */
+  if(hayPatron){
+    ctx.fillStyle="#FFF3D6"; ctx.fillRect(pad-4, headH+2, W-2*pad+8, taskH-4);
+    ctx.fillStyle="#4a3a10"; ctx.font="700 11px system-ui,sans-serif";
+    ctx.fillText("\u2600\uFE0F Apertura \u00B7 saca la embarcaci\u00F3n y monta la posta: "+
+      (TK.ap.length? TK.ap.map(taskName).join(", ") : "todos antes de subir"), pad+4, headH+taskH-8);
+  }
+
+  const gy=headH+taskH+colHead;     /* inicio de la rejilla */
+
+  /* rail de horas */
+  ctx.fillStyle="#6E7B85"; ctx.font="600 11px system-ui,sans-serif"; ctx.textAlign="right";
+  for(let t=0;t<=S;t+=2){
+    ctx.fillText(slotTime(t), pad+railW-8, gy+t*slotH+4);
+    ctx.strokeStyle="#D8CDB4"; ctx.beginPath();
+    ctx.moveTo(pad+railW, gy+t*slotH); ctx.lineTo(W-pad, gy+t*slotH); ctx.stroke();
+  }
+  ctx.textAlign="left";
+
+  /* columnas de torres */
+  for(let tw=0;tw<NTB;tw++){
+    const x=pad+railW+tw*(colW+gap);
+    ctx.fillStyle="#083F63"; ctx.font="800 14px system-ui,sans-serif"; ctx.textAlign="center";
+    ctx.fillText(colName(tw), x+colW/2, headH+taskH+20);
+    blocksOf(tw).forEach((b,bi)=>{
+      const y=gy+b.t*slotH, h=b.len*slotH;
+      if(b.v===null) return;
+      if(b.v==="GAP"){
+        ctx.fillStyle="#fff"; ctx.fillRect(x,y+1,colW,h-2);
+        ctx.strokeStyle="#B3403C"; ctx.setLineDash([5,4]); ctx.lineWidth=2;
+        ctx.strokeRect(x+1,y+2,colW-2,h-4); ctx.setLineDash([]); ctx.lineWidth=1;
+        ctx.fillStyle="#B3403C"; ctx.font="800 11px system-ui,sans-serif";
+        ctx.fillText("SIN CUBRIR", x+colW/2, y+h/2+4);
+        return;
+      }
+      const p=byIdx[b.v];
+      if(p.pat){
+        /* rayado naranja del patrón */
+        ctx.save(); ctx.beginPath(); ctx.rect(x,y+1,colW,h-2); ctx.clip();
+        ctx.fillStyle="#FFDF9E"; ctx.fillRect(x,y+1,colW,h-2);
+        ctx.strokeStyle="#F4A81C"; ctx.lineWidth=6;
+        for(let k=-h;k<colW+h;k+=16){
+          ctx.beginPath(); ctx.moveTo(x+k,y+h); ctx.lineTo(x+k+h,y); ctx.stroke();
+        }
+        ctx.restore(); ctx.lineWidth=1;
+      }else{
+        ctx.fillStyle=(bi%2)? "#DCEEF8" : "#0B5E93";
+        ctx.fillRect(x,y+1,colW,h-2);
+      }
+      const dark=p.pat||(bi%2);
+      ctx.fillStyle=dark? "#15242E" : "#fff";
+      ctx.font="800 16px system-ui,sans-serif";
+      ctx.fillText(p.letter, x+colW/2, y+h/2-2);
+      ctx.font="600 10px system-ui,sans-serif";
+      const nm=(!showNames)? "" : (p.pat? (patronName||"").slice(0,14) : (p.name||"").slice(0,14));
+      if(nm) ctx.fillText(nm, x+colW/2, y+h/2+11);
+      ctx.font="600 9px system-ui,sans-serif";
+      ctx.fillStyle=dark? "#6E7B85" : "#DCEEF8";
+      ctx.fillText(slotTime(b.t)+"–"+slotTime(b.t+b.len), x+colW/2, y+h-6);
+    });
+  }
+  ctx.textAlign="left";
+
+  /* banda de orden y cierre bajo la rejilla */
+  const by=gy+S*slotH+6;
+  ctx.fillStyle="#FFF3D6"; ctx.fillRect(pad-4, by, W-2*pad+8, botH-8);
+  ctx.fillStyle="#4a3a10"; ctx.font="700 11px system-ui,sans-serif"; ctx.textAlign="left";
+  ctx.fillText("\uD83E\uDDF9 Orden y limpieza: "+
+    (TK.orden.length? TK.orden.map(taskName).join(", ") : "quien est\u00E9 en posta"), pad+4, by+15);
+  ctx.fillText("\uD83C\uDF19 Cierre \u00B7 recoge y deja limpia la posta: "+
+    (TK.ci.length? TK.ci.map(taskName).join(", ") : "los \u00FAltimos al bajar"), pad+4, by+31);
+
+  /* horas por persona (la posta aparte: es guardia, no vigilancia) */
+  const counts={}, mvCounts={};
+  for(let tw=0;tw<towers.length;tw++) for(let t=0;t<S;t++){
+    const v=towers[tw][t]; if(v===null||v==="GAP") continue;
+    if(tw===3) mvCounts[v]=(mvCounts[v]||0)+1; else counts[v]=(counts[v]||0)+1;
+  }
+  let ty=gy+S*slotH+botH+22;
+  ctx.fillStyle="#083F63"; ctx.font="800 13px system-ui,sans-serif";
+  ctx.fillText("HORAS DE TORRE", pad, ty); ty+=20;
+  ctx.font="600 12px system-ui,sans-serif";
+  list.forEach((p,i)=>{
+    const col=i%2, x=pad+col*((W-pad*2)/2);
+    const mvc=mvCounts[p.idx]||0;
+    const label=(p.pat?("P"+((showNames&&patronName)?(" "+patronName):"")):p.letter+(showNames&&p.name?(" "+p.name):""))+" — "+fmtH(counts[p.idx]||0)+(mvc?(" +"+fmtH(mvc)+" posta"):"");
+    ctx.fillStyle="#15242E";
+    ctx.fillText(label.slice(0,26), x, ty);
+    if(col) ty+=24;
+  });
+
+  cv.toBlob(blob=>{
+    lastImgBlob=blob;
+    const showOverlay=()=>{
+      /* data URL: es lo único que el visor de Claude deja mostrar */
+      document.getElementById("imgResult").src=cv.toDataURL("image/png");
+      document.getElementById("imgOverlay").style.display="block";
+    };
+    const enVisor = (window.self!==window.top);  /* dentro del visor de Claude */
+    if(enVisor){ showOverlay(); return; }
+    try{
+      const file=new File([blob],"cuadrante.png",{type:"image/png"});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        navigator.share({files:[file],title:"Cuadrante "+PLAYAS[playa][0]})
+          .catch(()=>showOverlay());
+      }else showOverlay();
+    }catch(e){ showOverlay(); }
+  },"image/png");
+}
+let seedOffset=0;
+function rehacer(){ seedOffset+=1500; generate(); }
+let lastImgBlob=null;
+function copyImage(){
+  const b=document.getElementById("copyImgBtn");
+  const ok=()=>{ b.textContent="Copiada ✓ Pégala en WhatsApp"; setTimeout(()=>b.textContent="📋 Copiar imagen",2500); };
+  const ko=()=>{ b.textContent="No permitido aquí"; setTimeout(()=>b.textContent="📋 Copiar imagen",2000); };
+  try{
+    navigator.clipboard.write([new ClipboardItem({"image/png":lastImgBlob})]).then(ok).catch(ko);
+  }catch(e){ ko(); }
+}
+function downloadImage(){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(lastImgBlob);
+  a.download="cuadrante-"+PLAYAS[playa][0].toLowerCase()+".png";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+/* ---------- cuadrante de posta (quién está en la posta central en cada franja) ---------- */
+function sharePosta(){
+  const {byIdx,list}=lastGen;
+  const NTB=towers.length;
+  const eEnd=(mes==="junsep")?14:16;
+  const busy=(p,t)=>{ for(let tw=0;tw<NTB;tw++) if(towers[tw][t]===p.idx) return true; return false; };
+  const setAt=(t)=>{
+    const s=[];
+    for(const p of list){
+      const pres = p.pat ? (t>=0&&t<S) : (p.ws===0 ? (t<eEnd+1) : (t>=3));
+      if(pres && !busy(p,t)) s.push(p);
+    }
+    return s;
+  };
+  /* agrupar franjas consecutivas con la misma gente */
+  const groups=[];
+  for(let t=0;t<S;t++){
+    const ps=setAt(t);
+    const sig=ps.map(p=>p.idx).join(",");
+    if(groups.length && groups[groups.length-1].sig===sig) groups[groups.length-1].b=t+1;
+    else groups.push({a:t,b:t+1,sig,ps});
+  }
+
+  const sc=2, pad=16, W=430;
+  const cv=document.createElement("canvas");
+  const ctx0=cv.getContext("2d");
+  ctx0.font="700 12px system-ui,sans-serif";
+  const chipTxt=(p)=>p.pat? ("P"+((showNames&&patronName)?(" "+patronName):"")) : (p.letter+((showNames&&p.name)?(" "+p.name):""));
+  const rr=(ctx,x,y,w,h,r)=>{ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();};
+
+  /* pre-medir alturas: chips con salto de línea automático */
+  const chipH=24, chipGap=6, innerX=pad+80, maxX=W-pad-10;
+  function layout(ps){
+    const rows=[]; let x=innerX, row=[];
+    for(const p of ps){
+      const w=Math.max(34, ctx0.measureText(chipTxt(p)).width+18);
+      if(x+w>maxX && row.length){ rows.push(row); row=[]; x=innerX; }
+      row.push({p,w,x}); x+=w+chipGap;
+    }
+    if(row.length) rows.push(row);
+    return rows;
+  }
+  const lay=groups.map(g=>layout(g.ps));
+  const headH=76;
+  const cardPad=10;
+  const cardHs=lay.map(rows=>Math.max(1,rows.length)*(chipH+chipGap)-chipGap+cardPad*2);
+  const H=headH+cardHs.reduce((a,b)=>a+b+8,0)+pad+6;
+
+  cv.width=W*sc; cv.height=H*sc;
+  const ctx=cv.getContext("2d"); ctx.scale(sc,sc);
+  ctx.fillStyle="#F8F1E3"; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="#0B5E93"; ctx.fillRect(0,0,W,headH-10);
+  ctx.fillStyle="#F4A81C"; ctx.fillRect(0,headH-10,W,5);
+  ctx.fillStyle="#fff"; ctx.font="800 19px system-ui,sans-serif";
+  ctx.fillText("POSTA \u00B7 "+PLAYAS[playa][0], pad, 30);
+  ctx.font="600 12px system-ui,sans-serif"; ctx.fillStyle="#DCEEF8";
+  ctx.fillText("Qui\u00E9n est\u00E1 en la posta central \u00B7 "+(fechaSel? fechaBonita() : (mes==="junsep"?"jun/sep":"jul/ago")), pad, 52);
+
+  let y=headH+4;
+  groups.forEach((g,i)=>{
+    const ch=cardHs[i];
+    /* tarjeta */
+    ctx.fillStyle="#FFFFFF"; rr(ctx,pad-6,y,W-2*pad+12,ch,10); ctx.fill();
+    ctx.strokeStyle="#E4D8BC"; ctx.lineWidth=1; rr(ctx,pad-6,y,W-2*pad+12,ch,10); ctx.stroke();
+    /* hora en badge a la izquierda */
+    ctx.fillStyle="#083F63"; ctx.font="800 12px system-ui,sans-serif"; ctx.textAlign="left";
+    ctx.fillText(slotTime(g.a), pad+6, y+cardPad+15);
+    ctx.fillStyle="#6E7B85"; ctx.font="700 10px system-ui,sans-serif";
+    ctx.fillText("a "+slotTime(g.b), pad+6, y+cardPad+29);
+    /* chips */
+    lay[i].forEach((row,ri)=>{
+      row.forEach(({p,w,x})=>{
+        const cy=y+cardPad+ri*(chipH+chipGap);
+        if(p.pat){ ctx.fillStyle="#FFDF9E"; } else { ctx.fillStyle="#DCEEF8"; }
+        rr(ctx,x,cy,w,chipH,11); ctx.fill();
+        ctx.strokeStyle=p.pat?"#F4A81C":"#0B5E93"; ctx.lineWidth=1.2; rr(ctx,x,cy,w,chipH,11); ctx.stroke();
+        ctx.fillStyle="#083F63"; ctx.font="700 12px system-ui,sans-serif"; ctx.textAlign="center";
+        ctx.fillText(chipTxt(p), x+w/2, cy+16);
+      });
+    });
+    ctx.textAlign="left";
+    y+=ch+8;
+  });
+
+  cv.toBlob(blob=>{
+    lastImgBlob=blob;
+    document.getElementById("imgResult").src=cv.toDataURL("image/png");
+    document.getElementById("imgOverlay").style.display="block";
+  },"image/png");
+}
+
+/* ---------- copiar ---------- */
+function copyText(){
+  const {byIdx,list}=lastGen;
+  let out="CUADRANTE "+PLAYAS[playa][0]+" ("+(fechaSel? fechaBonita() : (mes==="junsep"?"jun/sep":"jul/ago"))+")\n";
+  for(let tw=0;tw<towers.length;tw++){
+    out+="\n"+colName(tw)+"\n";
+    blocksOf(tw).forEach(b=>{
+      const who=(b.v==="GAP")?"— sin cubrir —":(byIdx[b.v].pat?"P (patrón)":
+        (showNames? (byIdx[b.v].name||byIdx[b.v].letter) : byIdx[b.v].letter));
+      out+=slotTime(b.t)+"–"+slotTime(b.t+b.len)+"  "+who+"\n";
+    });
+  }
+  const counts={}, mvCounts={};
+  for(let tw=0;tw<towers.length;tw++) for(let t=0;t<S;t++){
+    const v=towers[tw][t]; if(v===null||v==="GAP") continue;
+    if(tw===3) mvCounts[v]=(mvCounts[v]||0)+1; else counts[v]=(counts[v]||0)+1;
+  }
+  const TKc=postaTasks(list,byIdx);
+  out+="\nTAREAS DE POSTA\n";
+  if(hayPatron) out+="Apertura (embarcaci\u00F3n + montar): "+(TKc.ap.length?TKc.ap.map(p=>(showNames&&p.name)?p.name:p.letter).join(", "):"todos antes de subir")+"\n";
+  out+="Orden y limpieza: "+(TKc.orden.length?TKc.orden.map(p=>(showNames&&p.name)?p.name:p.letter).join(", "):"quien est\u00E9 en posta")+"\n";
+  out+="Cierre (recoger posta): "+(TKc.ci.length?TKc.ci.map(p=>(showNames&&p.name)?p.name:p.letter).join(", "):"los \u00FAltimos al bajar")+"\n";
+  out+="\nHoras torre: "+list.map(p=>{
+    const mvc=mvCounts[p.idx]||0;
+    return (p.pat?"P":(showNames&&p.name?p.name:p.letter))+" "+fmtH(counts[p.idx]||0)+(mvc?(" (+"+fmtH(mvc)+" posta)"):"");
+  }).join(" · ");
+  const done=()=>{ const b=document.getElementById("copyBtn");
+    b.textContent="Copiado ✓"; setTimeout(()=>b.textContent="Copiar texto",1500); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(out).then(done).catch(()=>fallbackCopy(out,done));
+  } else fallbackCopy(out,done);
+}
+function fallbackCopy(txt,done){
+  const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta);
+  ta.select(); try{document.execCommand("copy");}catch(e){}
+  document.body.removeChild(ta); done();
+}
+/* al abrir: fecha de hoy predefinida y plantilla cargada */
+(function(){
+  const hoy=new Date();
+  const iso=hoy.getFullYear()+"-"+String(hoy.getMonth()+1).padStart(2,"0")+"-"+String(hoy.getDate()).padStart(2,"0");
+  document.getElementById("fecha").value=iso;
+  fechaCambiada();
+})();
+</script>
+</body>
+</html>
